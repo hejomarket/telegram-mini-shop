@@ -1,0 +1,8 @@
+'use client';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useMidtransSnap } from '../../hooks/useMidtransSnap';
+import { Button } from '../ui/Button';
+
+export function MidtransPayButton({orderNumber,accessToken,children='Bayar Sekarang'}:{orderNumber:string;accessToken?:string;children?:string}){ const router=useRouter(); const {openSnap,isLoading}=useMidtransSnap(); const [message,setMessage]=useState<string|null>(null); async function pay(){ setMessage(null); const res=await fetch('/api/payments/midtrans/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderNumber,orderAccessToken:accessToken})}); const data=await res.json() as {success:boolean;token?:string;redirectUrl?:string;message?:string}; if(!res.ok||!data.success||!data.token){ setMessage(data.message ?? 'Pembayaran online sedang belum tersedia. Silakan coba kembali nanti.'); return; } await openSnap({token:data.token,redirectUrl:data.redirectUrl,callbacks:{onSuccess:()=>router.push(`/orders/${orderNumber}?accessToken=${encodeURIComponent(accessToken??'')}`),onPending:()=>router.push(`/orders/${orderNumber}?accessToken=${encodeURIComponent(accessToken??'')}`),onError:()=>setMessage('Pembayaran belum dapat diproses. Silakan coba kembali.'),onClose:()=>setMessage('Pembayaran belum dikonfirmasi. Anda dapat melanjutkan pembayaran kapan saja.')}}); }
+ return <div><Button type="button" size="lg" className="w-full" isLoading={isLoading} onClick={pay}>{children}</Button>{message?<p className="mt-3 rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-700">{message}</p>:null}</div>; }

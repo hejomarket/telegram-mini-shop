@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const payload = createOrderSchema.parse(json);
     const order = buildOrder(payload);
     const result = await saveOrder(order);
-    return NextResponse.json({ success: true, orderNumber: result.order.orderNumber, mode: result.mode }, { status: 201 });
+    return NextResponse.json({ success: true, orderNumber: result.order.orderNumber, orderAccessToken: result.order.accessToken, mode: result.mode }, { status: 201 });
   } catch (error) {
     if (error instanceof SyntaxError || error instanceof ZodError) {
       return NextResponse.json({ success: false, message: 'Validation failed' }, { status: 400 });

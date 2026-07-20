@@ -31,6 +31,6 @@ export function buildOrder(payload: CreateOrderPayload): PersistedOrder {
     province: payload.address.province, postalCode: payload.address.postalCode, notes: payload.address.notes,
     telegramUserId: payload.telegram.userId ?? null, telegramUsername: payload.telegram.username ?? null,
     telegramFirstName: payload.telegram.firstName ?? null, telegramLastName: payload.telegram.lastName ?? null,
-    telegramLanguage: payload.telegram.language ?? null, subtotal, grandTotal: subtotal, status: 'pending', createdAt: now, updatedAt: now, items,
+    telegramLanguage: payload.telegram.language ?? null, subtotal, grandTotal: subtotal, status: 'pending', paymentStatus: 'unpaid', paymentProvider: null, paymentType: null, midtransTransactionId: null, midtransTransactionStatus: null, midtransFraudStatus: null, midtransStatusCode: null, midtransStatusMessage: null, midtransTransactionTime: null, midtransSettlementTime: null, midtransExpiryTime: null, midtransSnapToken: null, midtransRedirectUrl: null, paidAt: null, paymentUpdatedAt: null, paymentAttemptCount: 0, createdAt: now, updatedAt: now, items,
   };
 }

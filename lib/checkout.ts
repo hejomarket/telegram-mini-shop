@@ -17,6 +17,7 @@ export type DemoOrder = {
   items: DemoOrderItem[];
   totalQuantity: number;
   grandTotal: number;
+  orderAccessToken?: string;
 };
 
 export const emptyCustomer: CheckoutCustomer = { fullName: '', whatsapp: '', email: '' };
