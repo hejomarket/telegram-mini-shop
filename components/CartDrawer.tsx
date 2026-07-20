@@ -7,9 +7,10 @@ import { useCart } from '../lib/cart';
 type CartDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
+  onQuantityChange: () => void;
 };
 
-export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
+export function CartDrawer({ isOpen, onClose, onQuantityChange }: CartDrawerProps) {
   const cart = useCart();
 
   if (!isOpen) return null;
@@ -47,9 +48,9 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                     <p className="font-black">{formatRupiah(product.price * item.quantity)}</p>
                   </div>
                   <div className="mt-4 flex items-center gap-2">
-                    <button type="button" onClick={() => cart.decreaseItem(item.productId)} className="h-11 w-11 rounded-full bg-white text-xl font-black" aria-label={`Decrease ${product.name} quantity`}>−</button>
+                    <button type="button" onClick={() => { onQuantityChange(); cart.decreaseItem(item.productId); }} className="h-11 w-11 rounded-full bg-white text-xl font-black" aria-label={`Decrease ${product.name} quantity`}>−</button>
                     <span className="w-9 text-center font-black" aria-label={`${product.name} quantity`}>{item.quantity}</span>
-                    <button type="button" onClick={() => cart.increaseItem(item.productId)} className="h-11 w-11 rounded-full bg-soia-green text-xl font-black text-white" aria-label={`Increase ${product.name} quantity`}>+</button>
+                    <button type="button" onClick={() => { onQuantityChange(); cart.increaseItem(item.productId); }} className="h-11 w-11 rounded-full bg-soia-green text-xl font-black text-white" aria-label={`Increase ${product.name} quantity`}>+</button>
                     <button type="button" onClick={() => cart.removeItem(item.productId)} className="ml-auto rounded-full px-3 py-2 text-sm font-black text-red-700" aria-label={`Remove ${product.name} from cart`}>Remove</button>
                   </div>
                 </article>

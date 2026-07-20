@@ -3,6 +3,7 @@ import { formatRupiah } from '../lib/format';
 import { ProductVisual } from './ProductVisual';
 
 type ProductCardProps = {
+  key?: string;
   product: Product;
   onAdd: (productId: string) => void;
 };
