@@ -1,0 +1,11 @@
+import { NextResponse } from 'next/server';
+import { getMidtransTransactionStatus } from '../../../../../../lib/midtrans/client';
+import { getMidtransConfig } from '../../../../../../lib/midtrans/config';
+import { applyVerifiedStatus, getLatestPaymentAttempt } from '../../../../../../lib/midtrans/orders';
+import { verifyOrderAccessToken } from '../../../../../../lib/orders/access';
+import { CUSTOMER_ORDER_TOKEN_HEADER, serializeCustomerOrder } from '../../../../../../lib/orders/customer';
+import { listOrderEvents } from '../../../../../../lib/orders/events';
+import { findOrder, getOrderAccessTokenHash } from '../../../../../../lib/orders/repository';
+import { getSupabaseServerClient } from '../../../../../../lib/supabase/server';
+
+export async function POST(request: Request,{params}:{params:Promise<{orderNumber:string}>}){ const {orderNumber}=await params; const token=request.headers.get(CUSTOMER_ORDER_TOKEN_HEADER) ?? ''; const hash=await getOrderAccessTokenHash(orderNumber); if(!hash || !verifyOrderAccessToken(token,hash)) return NextResponse.json({success:false,message:'Pesanan tidak dapat diakses dari perangkat ini.'},{status:403}); const {order}=await findOrder(orderNumber); if(!order || !order.id) return NextResponse.json({success:false,message:'Pesanan tidak dapat diakses dari perangkat ini.'},{status:403}); if(!getMidtransConfig().isConfigured) return NextResponse.json({success:false,message:'Pembayaran online sedang belum tersedia.'},{status:503}); const attempt=await getLatestPaymentAttempt(order.id); if(!attempt) return NextResponse.json({success:false,message:'Belum ada percobaan pembayaran.'},{status:404}); const s=getSupabaseServerClient(); const {data:dbOrder}=s?await s.from('orders').select('*').eq('id',order.id).single():{data:null}; if(!dbOrder) return NextResponse.json({success:false,message:'Status pesanan belum dapat dimuat. Silakan coba kembali.'},{status:503}); const status=await getMidtransTransactionStatus(attempt.provider_order_id); await applyVerifiedStatus(dbOrder,attempt,status); const refreshed=await findOrder(orderNumber); const events=await listOrderEvents(order.id); return NextResponse.json({success:true,order:refreshed.order?serializeCustomerOrder(refreshed.order,events,getMidtransConfig().isConfigured):null}); }

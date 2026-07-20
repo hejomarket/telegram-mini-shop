@@ -53,6 +53,14 @@ export type PersistedOrder = {
   paidAt: string | null;
   paymentUpdatedAt: string | null;
   paymentAttemptCount: number;
+  courierName?: string | null;
+  shippingService?: string | null;
+  trackingNumber?: string | null;
+  shippedAt?: string | null;
+  completedAt?: string | null;
+  cancelledAt?: string | null;
+  estimatedDeliveryStart?: string | null;
+  estimatedDeliveryEnd?: string | null;
   createdAt: string;
   updatedAt: string;
   adminNotes?: string | null;

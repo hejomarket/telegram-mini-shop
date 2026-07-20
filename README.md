@@ -277,3 +277,27 @@ For a new manual Supabase SQL Editor setup, `supabase/schema.sql` reflects the f
 - Supabase credentials are required for persistent database mode; otherwise local/demo mode uses process memory.
 - Admin credentials are required for admin login.
 - This repository review does not prove live Supabase or Midtrans Sandbox behavior unless valid external credentials are supplied separately.
+
+## Customer Order Tracking
+
+Task 8 adds customer-facing tracking at `/orders` and `/orders/[orderNumber]`. `/orders` reads only a small device-local history from `localStorage` key `soia.customerOrders`; it is a convenience list and not an authorization source. `/orders/[orderNumber]` loads authoritative detail from the customer-safe order API after the browser supplies the stored order access token in the `x-order-access-token` request header. Checkout stores only the order number, raw customer access token returned once by the server, created date, display name, latest statuses, and grand total. Malformed local records are ignored, duplicates are collapsed, and history is capped to 20 newest orders.
+
+Order number alone is not sufficient to access sensitive order data. Legacy orders without an access-token hash are not exposed through customer APIs. The tracking page works in normal browser mode and Telegram Mini App browser contexts because all Telegram APIs remain guarded and the page does not depend on Telegram identity for authorization. Payment status is reloaded from the database during ordinary page fetches; the explicit **Periksa Status** action calls the verified Midtrans status flow only when Midtrans is configured and an existing payment attempt is present.
+
+Timeline milestones are derived from trusted order/payment fields plus customer-safe order events when available. Legacy orders without event history receive a safe fallback timeline that avoids inventing transition timestamps.
+
+## Shipping Information
+
+Shipping in Task 8 is manually entered by an authenticated admin. Automatic courier integration, live shipment tracking, and courier URL linking are not implemented. Admins can provide courier name, shipping service, tracking number, and optional estimated delivery dates. Customers see tracking information once available, including a **Nomor Resi** copy action; before shipment, the UI states that the order has not been shipped.
+
+## Order Events
+
+Task 8 introduces `order_events` for lightweight server-side order history. Events are created for order creation, payment attempts, verified payment status changes, admin status changes, and meaningful shipping/tracking updates. Customer APIs filter events to customer-safe event types and never return internal metadata such as admin notes, webhook validation failures, raw provider payloads, or secrets. Event helpers perform short-window duplicate prevention for idempotent workflows.
+
+## Security
+
+Customer APIs return limited fields only: customer-safe order identifiers, statuses, totals, item snapshots, masked contact information, delivery details, shipping information, timeline data, and allowed actions. They do not return database IDs, access-token hashes, raw access tokens, admin notes, Telegram IDs, Telegram metadata, Midtrans server keys, raw Midtrans responses, or Snap tokens. Telegram identity is never used as sole authorization.
+
+## Migration Order
+
+Apply migrations in numeric order. Task 8 adds `supabase/migrations/005_customer_order_tracking.sql` after the existing initial, admin, and Midtrans migrations. The migration is additive: it adds nullable manual shipping columns and creates the `order_events` table plus indexes without rewriting historical migrations.
