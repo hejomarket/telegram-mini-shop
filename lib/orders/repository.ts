@@ -48,6 +48,13 @@ export async function saveOrder(orderInput: PersistedOrder): Promise<{ order: Pe
   return { order: persisted, mode };
 }
 
+export async function getOrderAccessTokenHash(orderNumber: string) {
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return null;
+  const { data } = await supabase.from('orders').select('order_access_token_hash').eq('order_number', orderNumber).maybeSingle();
+  return (data as { order_access_token_hash?: string | null } | null)?.order_access_token_hash ?? null;
+}
+
 export async function findOrder(orderNumber: string): Promise<{ order: PersistedOrder | null; mode: RuntimeMode }> {
   const supabase = getSupabaseServerClient();
   if (!supabase) return { order: demoOrders.get(orderNumber) ?? null, mode: 'demo' };
