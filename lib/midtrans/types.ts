@@ -1,0 +1,9 @@
+export type PaymentStatus = 'unpaid'|'pending'|'paid'|'failed'|'expired'|'cancelled'|'challenged'|'refunded';
+export type MidtransEnvironment = 'sandbox'|'production';
+export type MidtransConfig = { isConfigured: boolean; isProduction: boolean; environment: MidtransEnvironment; serverKey?: string; clientKey?: string; merchantId?: string; appUrl?: string; snapApiBaseUrl: string; snapJsUrl: string };
+export type MidtransItem = { id: string; price: number; quantity: number; name: string };
+export type MidtransCustomer = { first_name: string; email?: string; phone?: string; billing_address?: { address?: string; city?: string; postal_code?: string; country_code?: string }; shipping_address?: { address?: string; city?: string; postal_code?: string; country_code?: string } };
+export type SnapTransactionRequest = { transaction_details: { order_id: string; gross_amount: number }; item_details: MidtransItem[]; customer_details: MidtransCustomer; callbacks?: { finish?: string } };
+export type SnapTransactionResponse = { token: string; redirect_url: string };
+export type MidtransStatusResponse = { order_id: string; gross_amount: string; transaction_status: string; fraud_status?: string; status_code?: string; status_message?: string; transaction_id?: string; payment_type?: string; transaction_time?: string; settlement_time?: string; expiry_time?: string; signature_key?: string; merchant_id?: string };
+export type PaymentAttempt = { id?: string; orderId: string; providerOrderId: string; snapToken?: string | null; redirectUrl?: string | null; grossAmount: number; transactionStatus?: string | null; fraudStatus?: string | null; paymentType?: string | null; transactionId?: string | null };

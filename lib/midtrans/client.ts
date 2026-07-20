@@ -1,0 +1,8 @@
+import 'server-only';
+import { getMidtransConfig } from './config';
+import type { MidtransStatusResponse, SnapTransactionRequest, SnapTransactionResponse } from './types';
+
+function authHeader(serverKey: string) { return `Basic ${Buffer.from(`${serverKey}:`).toString('base64')}`; }
+async function parseResponse<T>(response: Response): Promise<T> { const text = await response.text(); let data: unknown = {}; try { data = text ? JSON.parse(text) : {}; } catch { throw new Error('Midtrans response malformed'); } if (!response.ok) throw new Error('Midtrans request failed'); return data as T; }
+export async function createSnapTransaction(payload: SnapTransactionRequest): Promise<SnapTransactionResponse> { const c = getMidtransConfig(); if (!c.serverKey || !c.isConfigured) throw new Error('Midtrans configuration missing'); const response = await fetch(`${c.snapApiBaseUrl}/transactions`, { method:'POST', headers:{ Authorization: authHeader(c.serverKey), 'Content-Type':'application/json', Accept:'application/json' }, body: JSON.stringify(payload) }); return parseResponse<SnapTransactionResponse>(response); }
+export async function getMidtransTransactionStatus(providerOrderId: string): Promise<MidtransStatusResponse> { const c = getMidtransConfig(); if (!c.serverKey || !c.isConfigured) throw new Error('Midtrans configuration missing'); const base = c.isProduction ? 'https://api.midtrans.com/v2' : 'https://api.sandbox.midtrans.com/v2'; const response = await fetch(`${base}/${encodeURIComponent(providerOrderId)}/status`, { headers:{ Authorization: authHeader(c.serverKey), Accept:'application/json' } }); return parseResponse<MidtransStatusResponse>(response); }

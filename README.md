@@ -179,3 +179,46 @@ The migration adds `admin_notes`, updates the order status constraint, and creat
 * Never expose `SUPABASE_SERVICE_ROLE_KEY` in client components or browser bundles.
 * Internal admin notes are only available through authenticated admin pages and APIs.
 * Public storefront and checkout remain available when admin configuration is incomplete.
+
+## Midtrans Sandbox Setup
+
+1. Create or access a Midtrans Sandbox account.
+2. Obtain the Sandbox Client Key and Server Key from Midtrans Dashboard.
+3. Add the values to `.env.local` using `MIDTRANS_IS_PRODUCTION=false`, `MIDTRANS_SERVER_KEY`, `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`, `MIDTRANS_MERCHANT_ID`, and `NEXT_PUBLIC_APP_URL`.
+4. Add the same variables to Vercel Preview.
+5. Redeploy so server and browser config are refreshed.
+6. Configure the payment notification URL in Midtrans Dashboard.
+7. Test payment outcomes with the official Midtrans Sandbox simulator.
+
+## Webhook URL
+
+Use this public HTTPS notification URL:
+
+```text
+https://YOUR_DOMAIN/api/webhooks/midtrans
+```
+
+Replace `YOUR_DOMAIN` with the exact Vercel Production or Preview HTTPS URL that Midtrans can reach publicly.
+
+## Payment Channels
+
+Payment methods are controlled through Midtrans Snap Preferences, merchant activation, account type, Sandbox/Production environment, and Midtrans approval requirements. The application intentionally does not send `enabled_payments`, so Snap and the merchant dashboard decide which activated channels are displayed. Sandbox availability does not guarantee Production activation.
+
+## Production Setup
+
+1. Complete Midtrans production onboarding.
+2. Obtain Production Client Key and Server Key.
+3. Configure the Production notification URL.
+4. Configure and activate Snap payment channels in Midtrans Dashboard.
+5. Add Production environment variables in Vercel.
+6. Set `MIDTRANS_IS_PRODUCTION=true`.
+7. Redeploy.
+8. Perform a controlled low-value production test before announcing availability.
+
+## Payment Security
+
+Never expose the Midtrans Server Key, Supabase service role key, admin password hash, or admin session secret. Browser Snap callbacks are only UX signals and are never proof of payment. Final payment status is controlled by verified Midtrans webhook signatures and server-side Get Status verification. Never commit real credentials.
+
+## Payment Testing
+
+Use Midtrans Sandbox tools to test pending, settlement, deny, cancel, expire, repeated webhook delivery, invalid signature handling, payment retry, and out-of-order notifications. Automated tests should mock Midtrans and never call Production APIs.

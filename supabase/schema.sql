@@ -60,3 +60,5 @@ create trigger orders_set_updated_at before update on public.orders for each row
 
 drop trigger if exists order_items_set_updated_at on public.order_items;
 create trigger order_items_set_updated_at before update on public.order_items for each row execute function public.set_updated_at();
+
+-- Task 7 Midtrans Snap payments are applied additively in supabase/migrations/003_midtrans_payments.sql.

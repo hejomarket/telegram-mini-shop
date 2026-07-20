@@ -109,7 +109,7 @@ export default function CheckoutPage() {
           } : undefined,
         }),
       });
-      const result = await response.json() as { success: boolean; orderNumber?: string; mode?: DemoOrder['mode']; message?: string };
+      const result = await response.json() as { success: boolean; orderNumber?: string; orderAccessToken?: string; mode?: DemoOrder['mode']; message?: string };
       if (!response.ok || !result.success || !result.orderNumber) throw new Error(result.message || 'Pesanan gagal dibuat.');
       const completedOrder: DemoOrder = {
         id: result.orderNumber,
@@ -120,11 +120,11 @@ export default function CheckoutPage() {
         items: orderItems,
         totalQuantity: cart.itemCount,
         grandTotal: cart.totalPrice,
-      };
+        orderAccessToken: result.orderAccessToken,
+      } as DemoOrder;
       safeWriteJson(LAST_ORDER_STORAGE_KEY, completedOrder);
-      cart.clearCart();
       triggerHaptic();
-      router.push('/checkout/success');
+      router.push(`/orders/${result.orderNumber}?accessToken=${encodeURIComponent(result.orderAccessToken ?? '')}`);
     } catch {
       setToast('Pesanan belum dapat dibuat. Coba lagi beberapa saat.');
     } finally {
@@ -153,7 +153,7 @@ export default function CheckoutPage() {
           <div className="rounded-[2rem] border border-soia-green/8 bg-white/75 p-4 shadow-card"><h2 className="text-xl font-black">3. Informasi Pengiriman</h2><div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Alamat Lengkap *" error={addressErrors.address}><textarea className={`${inputClass(addressErrors.address)} min-h-28 py-3`} value={address.address} onChange={(e) => updateAddress('address', e.target.value)} /></Field><Field label="Kecamatan *" error={addressErrors.district}><input className={inputClass(addressErrors.district)} value={address.district} onChange={(e) => updateAddress('district', e.target.value)} /></Field><Field label="Kota / Kabupaten *" error={addressErrors.city}><input className={inputClass(addressErrors.city)} value={address.city} onChange={(e) => updateAddress('city', e.target.value)} /></Field><Field label="Provinsi *" error={addressErrors.province}><input className={inputClass(addressErrors.province)} value={address.province} onChange={(e) => updateAddress('province', e.target.value)} /></Field><Field label="Kode Pos *" error={addressErrors.postalCode}><input className={inputClass(addressErrors.postalCode)} value={address.postalCode} onChange={(e) => updateAddress('postalCode', e.target.value)} inputMode="numeric" maxLength={5} /></Field><Field label="Catatan Pesanan (opsional)"><textarea className={`${inputClass()} min-h-24 py-3`} value={address.notes} onChange={(e) => updateAddress('notes', e.target.value)} /></Field></div></div>
         </section>
 
-        <aside className="h-fit rounded-[2rem] border border-soia-green/8 bg-[var(--tg-card)] p-5 shadow-card lg:sticky lg:top-24"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-soia-mist"><CartIcon /></div><h2 className="mt-4 text-xl font-black">4. Konfirmasi</h2><div className="mt-4 space-y-3 text-sm font-semibold text-soia-green/70"><p><strong className="text-soia-green">Nama:</strong> {customer.fullName || '-'}</p><p><strong className="text-soia-green">WhatsApp:</strong> {customer.whatsapp || '-'}</p><p><strong className="text-soia-green">Alamat:</strong> {[address.address, address.district, address.city, address.province, address.postalCode].filter(Boolean).join(', ') || '-'}</p><div><strong className="text-soia-green">Produk:</strong><ul className="mt-2 space-y-1">{orderItems.map((item) => <li key={item.productId}>{item.name} × {item.quantity}</li>)}</ul></div><p><strong className="text-soia-green">Total quantity:</strong> {cart.itemCount}</p><p className="text-2xl font-black text-soia-green">{formatRupiah(cart.totalPrice)}</p></div><label className="mt-5 flex items-start gap-3 rounded-2xl bg-soia-cream/70 p-4 text-sm font-bold"><input className="mt-1 h-5 w-5 accent-soia-green" type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />Saya sudah memeriksa ringkasan pesanan dan memahami total akan dihitung ulang oleh server.</label><Button type="button" size="lg" className="mt-4 w-full" isLoading={isSubmitting} disabled={!isValid} onClick={submit}>Buat Pesanan</Button></aside>
+        <aside className="h-fit rounded-[2rem] border border-soia-green/8 bg-[var(--tg-card)] p-5 shadow-card lg:sticky lg:top-24"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-soia-mist"><CartIcon /></div><h2 className="mt-4 text-xl font-black">4. Konfirmasi</h2><div className="mt-4 space-y-3 text-sm font-semibold text-soia-green/70"><p><strong className="text-soia-green">Nama:</strong> {customer.fullName || '-'}</p><p><strong className="text-soia-green">WhatsApp:</strong> {customer.whatsapp || '-'}</p><p><strong className="text-soia-green">Alamat:</strong> {[address.address, address.district, address.city, address.province, address.postalCode].filter(Boolean).join(', ') || '-'}</p><div><strong className="text-soia-green">Produk:</strong><ul className="mt-2 space-y-1">{orderItems.map((item) => <li key={item.productId}>{item.name} × {item.quantity}</li>)}</ul></div><p><strong className="text-soia-green">Total quantity:</strong> {cart.itemCount}</p><p className="text-2xl font-black text-soia-green">{formatRupiah(cart.totalPrice)}</p></div><label className="mt-5 flex items-start gap-3 rounded-2xl bg-soia-cream/70 p-4 text-sm font-bold"><input className="mt-1 h-5 w-5 accent-soia-green" type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />Saya sudah memeriksa ringkasan pesanan dan memahami total akan dihitung ulang oleh server.</label><Button type="button" size="lg" className="mt-4 w-full" isLoading={isSubmitting} disabled={!isValid} onClick={submit}>Bayar Sekarang</Button></aside>
       </div>
       {toast ? <div className="toast-in fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[70] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-soia-green/10 bg-white/95 px-4 py-3 text-sm font-bold text-soia-green shadow-card" role="status">{toast}</div> : null}
     </main>

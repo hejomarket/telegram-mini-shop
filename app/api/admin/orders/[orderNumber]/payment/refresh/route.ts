@@ -1,0 +1,6 @@
+import { NextResponse } from 'next/server';
+import { requireAdminSession } from '../../../../../../../lib/admin/auth';
+import { getSupabaseServerClient } from '../../../../../../../lib/supabase/server';
+import { getMidtransTransactionStatus } from '../../../../../../../lib/midtrans/client';
+import { applyVerifiedStatus } from '../../../../../../../lib/midtrans/orders';
+export async function POST(_request:Request,{params}:{params:Promise<{orderNumber:string}>}){ await requireAdminSession(); const {orderNumber}=await params; const s=getSupabaseServerClient(); if(!s) return NextResponse.json({success:false,message:'Database unavailable'},{status:503}); const {data:order}=await s.from('orders').select('*').eq('order_number',orderNumber).single(); if(!order) return NextResponse.json({success:false,message:'Pesanan tidak ditemukan'},{status:404}); const {data:attempt}=await s.from('payment_attempts').select('*').eq('order_id',order.id).order('created_at',{ascending:false}).limit(1).single(); if(!attempt) return NextResponse.json({success:false,message:'Belum ada percobaan pembayaran'},{status:404}); const status=await getMidtransTransactionStatus(attempt.provider_order_id); const result=await applyVerifiedStatus(order,attempt,status); return NextResponse.json({success:true,...result}); }
