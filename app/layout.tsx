@@ -1,7 +1,8 @@
-import type React from 'react';
+import React from 'react';
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { CartProvider } from '../lib/cart';
+import { TelegramProvider } from '../providers/TelegramProvider';
 
 export const metadata: Metadata = {
   title: 'SOIA Protein Shop',
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="id">
       <body>
-        <CartProvider>{children}</CartProvider>
+        {React.createElement(TelegramProvider, null, React.createElement(CartProvider, null, children))}
       </body>
     </html>
   );

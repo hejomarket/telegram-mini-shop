@@ -29,6 +29,7 @@ function isValidCartItem(item: unknown): item is CartItem {
   return (
     typeof candidate.productId === 'string' &&
     productById.has(candidate.productId) &&
+    typeof candidate.quantity === 'number' &&
     Number.isInteger(candidate.quantity) &&
     candidate.quantity > 0 &&
     candidate.quantity <= 99
