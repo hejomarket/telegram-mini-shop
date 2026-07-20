@@ -301,3 +301,25 @@ Customer APIs return limited fields only: customer-safe order identifiers, statu
 ## Migration Order
 
 Apply migrations in numeric order. Task 8 adds `supabase/migrations/005_customer_order_tracking.sql` after the existing initial, admin, and Midtrans migrations. The migration is additive: it adds nullable manual shipping columns and creates the `order_events` table plus indexes without rewriting historical migrations.
+
+## Task 9 Product CMS
+
+Authenticated admins manage products at `/admin/products`, create products at `/admin/products/new`, and edit immutable product IDs at `/admin/products/[productId]`. Product lifecycle is intentionally non-destructive: **Aktif** publishes a product to the storefront, **Tidak Aktif** hides it, **Tersedia** permits checkout, and **Tidak Tersedia** keeps an active product visible while blocking new purchases. Permanent product deletion is not exposed because historical orders and payment records keep product snapshots.
+
+### Product Catalog Architecture
+
+Supabase `public.products` is the canonical production catalog. The storefront reads active products through the shared product repository, and checkout reloads trusted products by ID from the same repository before calculating item snapshots and totals. Client cart data is only a responsive UX snapshot and never controls price, identity, or purchase eligibility. Historical `order_items` remain authoritative snapshots containing product ID, product name, unit price, quantity, and subtotal at purchase time. Midtrans Snap creation continues to use stored order items and stored order totals, not current catalog prices.
+
+The legacy static catalog in `lib/products.ts` remains only as a development seed reference and explicit Demo Mode storefront fallback. It must not be used to override Supabase products when Supabase service-role configuration is available.
+
+### Product Images
+
+Product images use Supabase Storage bucket `product-images`. Public reads may be enabled for storefront display, but writes are server-controlled through the authenticated admin endpoint `POST /api/admin/products/images`. Accepted file types are JPEG, PNG, and WebP with a maximum size of 5 MB. Upload paths are sanitized under `products/uploads/` and never include admin or customer data. Replace an image by uploading the new image first, then saving the returned URL/path on the product record; cleanup of old managed images should be handled carefully and must not remove legacy external images.
+
+### Demo Mode
+
+When Supabase URL or service-role configuration is missing, the public storefront uses the documented static fallback catalog. Admin product create, edit, status, and image upload operations are disabled and return a safe message: `Pengelolaan produk membutuhkan konfigurasi database Supabase.` No fake product persistence is reported.
+
+### Product Migration and Seed
+
+Apply migrations in numeric order. Task 9 adds `supabase/migrations/006_product_cms.sql` after Task 8. The migration creates `public.products` additively with unique slug and SKU indexes, active/availability/display-order indexes, updated-at trigger support, safe constraints, and idempotent inserts that preserve existing public product IDs. `supabase/seed/products.sql` mirrors the safe seed strategy for local setup and uses conflict handling so production edits are not overwritten by repeated deployments.

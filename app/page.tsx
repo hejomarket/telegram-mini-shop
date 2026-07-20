@@ -1,5 +1,7 @@
 import { AppShell } from '../components/AppShell';
+import { listPublicProducts } from '../lib/products/repository';
 
-export default function Home() {
-  return <AppShell />;
+export default async function Home() {
+  const products = await listPublicProducts();
+  return <AppShell products={products} />;
 }

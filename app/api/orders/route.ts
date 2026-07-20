@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   try {
     const json = await request.json();
     const payload = createOrderSchema.parse(json);
-    const order = buildOrder(payload);
+    const order = await buildOrder(payload);
     const result = await saveOrder(order);
     return NextResponse.json({ success: true, orderNumber: result.order.orderNumber, orderAccessToken: result.order.accessToken, mode: result.mode }, { status: 201 });
   } catch (error) {
