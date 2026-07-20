@@ -1,0 +1,8 @@
+import 'server-only';
+import { getSupabaseServerClient } from '../supabase/server';
+import type { OrderStatus, PaymentStatus } from './types';
+import type { OrderEvent } from './customer';
+
+type EventInput = { orderId?: string | null; eventType: string; orderStatus?: OrderStatus | null; paymentStatus?: PaymentStatus | null; title: string; description?: string | null; source: 'system' | 'customer' | 'admin' | 'midtrans'; metadata?: Record<string, unknown> | null };
+export async function createOrderEvent(input: EventInput) { const s=getSupabaseServerClient(); if(!s || !input.orderId) return null; const since = new Date(Date.now()-5000).toISOString(); const {data:existing}=await s.from('order_events').select('id').eq('order_id',input.orderId).eq('event_type',input.eventType).gte('created_at',since).limit(1).maybeSingle(); if(existing) return existing; const {data}=await s.from('order_events').insert({ order_id:input.orderId, event_type:input.eventType, order_status:input.orderStatus ?? null, payment_status:input.paymentStatus ?? null, title:input.title, description:input.description ?? null, source:input.source, metadata:input.metadata ?? null }).select('*').single(); return data; }
+export async function listOrderEvents(orderId?: string | null): Promise<OrderEvent[]> { const s=getSupabaseServerClient(); if(!s || !orderId) return []; const {data}=await s.from('order_events').select('event_type,order_status,payment_status,title,description,source,created_at').eq('order_id',orderId).order('created_at',{ascending:true}); return (data ?? []).map((e:any)=>({ eventType:e.event_type, orderStatus:e.order_status, paymentStatus:e.payment_status, title:e.title, description:e.description, source:e.source, createdAt:e.created_at })); }

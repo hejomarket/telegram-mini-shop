@@ -24,6 +24,7 @@ import {
   type DemoOrder,
 } from '../../lib/checkout';
 import { productById } from '../../lib/products';
+import { readCustomerOrderHistory, upsertCustomerOrderHistory, writeCustomerOrderHistory } from '../../lib/orders/history';
 
 const steps = ['Ringkasan', 'Data', 'Pengiriman', 'Konfirmasi'];
 
@@ -123,8 +124,9 @@ export default function CheckoutPage() {
         orderAccessToken: result.orderAccessToken,
       } as DemoOrder;
       safeWriteJson(LAST_ORDER_STORAGE_KEY, completedOrder);
+      if (result.orderAccessToken) writeCustomerOrderHistory(upsertCustomerOrderHistory(readCustomerOrderHistory(), { orderNumber: result.orderNumber, accessToken: result.orderAccessToken, createdAt: completedOrder.createdAt, customerName: customer.fullName, orderStatus: 'pending', paymentStatus: 'unpaid', grandTotal: cart.totalPrice }));
       triggerHaptic();
-      router.push(`/orders/${result.orderNumber}?accessToken=${encodeURIComponent(result.orderAccessToken ?? '')}`);
+      router.push(`/orders/${result.orderNumber}`);
     } catch {
       setToast('Pesanan belum dapat dibuat. Coba lagi beberapa saat.');
     } finally {
