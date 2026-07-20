@@ -1,4 +1,5 @@
 create extension if not exists pgcrypto;
+create extension if not exists pg_trgm;
 
 create table if not exists public.orders (
   id uuid primary key default gen_random_uuid(),
@@ -12,6 +13,7 @@ create table if not exists public.orders (
   province text not null,
   postal_code text not null,
   notes text,
+  admin_notes text,
   telegram_user_id bigint,
   telegram_username text,
   telegram_first_name text,
@@ -19,7 +21,7 @@ create table if not exists public.orders (
   telegram_language text,
   subtotal integer not null check (subtotal >= 0),
   grand_total integer not null check (grand_total >= subtotal),
-  status text not null default 'pending' check (status in ('pending', 'confirmed', 'cancelled', 'fulfilled')),
+  status text not null default 'pending' check (status in ('pending', 'confirmed', 'processing', 'shipped', 'completed', 'cancelled')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -39,6 +41,9 @@ create table if not exists public.order_items (
 create index if not exists orders_order_number_idx on public.orders(order_number);
 create index if not exists orders_created_at_idx on public.orders(created_at desc);
 create index if not exists orders_status_idx on public.orders(status);
+create index if not exists orders_customer_name_idx on public.orders using gin (customer_name gin_trgm_ops);
+create index if not exists orders_whatsapp_idx on public.orders(whatsapp);
+create index if not exists orders_telegram_username_idx on public.orders(telegram_username);
 create index if not exists order_items_order_id_idx on public.order_items(order_id);
 create index if not exists order_items_product_id_idx on public.order_items(product_id);
 

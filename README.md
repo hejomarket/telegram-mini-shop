@@ -135,3 +135,47 @@ Validation failures use:
 ```json
 { "success": false, "message": "Validation failed" }
 ```
+
+## Admin Setup
+
+1. Generate an admin password hash locally:
+
+   ```bash
+   npm run admin:hash-password -- "your-long-admin-password"
+   ```
+
+   The command prints only the generated `scrypt` hash. Never store or commit the plaintext password.
+
+2. Add these server-only values to your local environment:
+
+   ```bash
+   ADMIN_EMAIL=
+   ADMIN_PASSWORD_HASH=
+   ADMIN_SESSION_SECRET=
+   ```
+
+   Use a long random `ADMIN_SESSION_SECRET`, for example `openssl rand -base64 48`.
+
+3. Add the same environment variables in Vercel as server-only project environment variables.
+4. Redeploy after changing environment variables.
+5. Open `/admin/login` and sign in.
+
+If admin variables are incomplete, the public storefront remains available and the admin login page shows a safe configuration message.
+
+## Database Migration
+
+Run the additive admin dashboard migration against the existing Task 5 database:
+
+```sql
+supabase/migrations/002_admin_dashboard.sql
+```
+
+The migration adds `admin_notes`, updates the order status constraint, and creates useful indexes for admin search and filters.
+
+## Security Notes
+
+* Admin secrets must remain server-only.
+* Never use or commit a plaintext admin password.
+* Never expose `SUPABASE_SERVICE_ROLE_KEY` in client components or browser bundles.
+* Internal admin notes are only available through authenticated admin pages and APIs.
+* Public storefront and checkout remain available when admin configuration is incomplete.
