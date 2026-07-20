@@ -10,7 +10,7 @@ export type CheckoutAddress = { address: string; district: string; city: string;
 export type DemoOrderItem = CartItem & { name: string; unitPrice: number; subtotal: number };
 export type DemoOrder = {
   id: string;
-  mode: 'Demo';
+  mode: 'demo' | 'supabase' | 'Demo';
   createdAt: string;
   customer: CheckoutCustomer;
   delivery: CheckoutAddress;

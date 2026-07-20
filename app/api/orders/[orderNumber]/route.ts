@@ -1,0 +1,20 @@
+import { NextResponse } from 'next/server';
+import { findOrder } from '../../../../lib/orders/repository';
+import { serverLog } from '../../../../lib/orders/logger';
+
+type Params = { params: Promise<{ orderNumber: string }> };
+
+export async function GET(_request: Request, { params }: Params) {
+  try {
+    const { orderNumber } = await params;
+    if (!/^SOIA-\d{8}-[A-Z0-9]{6}$/.test(orderNumber)) {
+      return NextResponse.json({ success: false, message: 'Validation failed' }, { status: 400 });
+    }
+    const { order, mode } = await findOrder(orderNumber);
+    if (!order) return NextResponse.json({ success: false, message: 'Order not found', mode }, { status: 404 });
+    return NextResponse.json({ success: true, order, mode });
+  } catch (error) {
+    serverLog('error', 'order.read.failed', { message: error instanceof Error ? error.message : 'Unknown error' });
+    return NextResponse.json({ success: false, message: 'Unable to read order' }, { status: 500 });
+  }
+}

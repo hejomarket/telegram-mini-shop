@@ -14,7 +14,6 @@ import {
   ADDRESS_STORAGE_KEY,
   CUSTOMER_STORAGE_KEY,
   LAST_ORDER_STORAGE_KEY,
-  createDemoOrderNumber,
   emptyAddress,
   emptyCustomer,
   getOrderItems,
@@ -90,13 +89,31 @@ export default function CheckoutPage() {
   const updateCustomer = (key: keyof CheckoutCustomer, value: string) => { setCustomer((current) => ({ ...current, [key]: value })); setConfirmed(false); };
   const updateAddress = (key: keyof CheckoutAddress, value: string) => { setAddress((current) => ({ ...current, [key]: value })); setConfirmed(false); };
 
-  const submit = () => {
+  const submit = async () => {
     if (!isValid) { setToast('Lengkapi data dan centang konfirmasi terlebih dahulu.'); return; }
     setIsSubmitting(true);
-    window.setTimeout(() => {
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer,
+          address,
+          items: cart.items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+          telegram: user ? {
+            userId: user.id,
+            username: user.username,
+            firstName: user.first_name,
+            lastName: user.last_name,
+            language: user.language_code,
+          } : undefined,
+        }),
+      });
+      const result = await response.json() as { success: boolean; orderNumber?: string; mode?: DemoOrder['mode']; message?: string };
+      if (!response.ok || !result.success || !result.orderNumber) throw new Error(result.message || 'Pesanan gagal dibuat.');
       const completedOrder: DemoOrder = {
-        id: createDemoOrderNumber(),
-        mode: 'Demo',
+        id: result.orderNumber,
+        mode: result.mode ?? 'demo',
         createdAt: new Date().toISOString(),
         customer,
         delivery: address,
@@ -108,7 +125,11 @@ export default function CheckoutPage() {
       cart.clearCart();
       triggerHaptic();
       router.push('/checkout/success');
-    }, 650);
+    } catch {
+      setToast('Pesanan belum dapat dibuat. Coba lagi beberapa saat.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!hydrated) return <main className="safe mx-auto min-h-screen w-full max-w-5xl px-4"><div className="mt-6 h-32 animate-pulse rounded-[2rem] bg-white/60" /></main>;
@@ -132,7 +153,7 @@ export default function CheckoutPage() {
           <div className="rounded-[2rem] border border-soia-green/8 bg-white/75 p-4 shadow-card"><h2 className="text-xl font-black">3. Informasi Pengiriman</h2><div className="mt-4 grid gap-4 sm:grid-cols-2"><Field label="Alamat Lengkap *" error={addressErrors.address}><textarea className={`${inputClass(addressErrors.address)} min-h-28 py-3`} value={address.address} onChange={(e) => updateAddress('address', e.target.value)} /></Field><Field label="Kecamatan *" error={addressErrors.district}><input className={inputClass(addressErrors.district)} value={address.district} onChange={(e) => updateAddress('district', e.target.value)} /></Field><Field label="Kota / Kabupaten *" error={addressErrors.city}><input className={inputClass(addressErrors.city)} value={address.city} onChange={(e) => updateAddress('city', e.target.value)} /></Field><Field label="Provinsi *" error={addressErrors.province}><input className={inputClass(addressErrors.province)} value={address.province} onChange={(e) => updateAddress('province', e.target.value)} /></Field><Field label="Kode Pos *" error={addressErrors.postalCode}><input className={inputClass(addressErrors.postalCode)} value={address.postalCode} onChange={(e) => updateAddress('postalCode', e.target.value)} inputMode="numeric" maxLength={5} /></Field><Field label="Catatan Pesanan (opsional)"><textarea className={`${inputClass()} min-h-24 py-3`} value={address.notes} onChange={(e) => updateAddress('notes', e.target.value)} /></Field></div></div>
         </section>
 
-        <aside className="h-fit rounded-[2rem] border border-soia-green/8 bg-[var(--tg-card)] p-5 shadow-card lg:sticky lg:top-24"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-soia-mist"><CartIcon /></div><h2 className="mt-4 text-xl font-black">4. Konfirmasi</h2><div className="mt-4 space-y-3 text-sm font-semibold text-soia-green/70"><p><strong className="text-soia-green">Nama:</strong> {customer.fullName || '-'}</p><p><strong className="text-soia-green">WhatsApp:</strong> {customer.whatsapp || '-'}</p><p><strong className="text-soia-green">Alamat:</strong> {[address.address, address.district, address.city, address.province, address.postalCode].filter(Boolean).join(', ') || '-'}</p><div><strong className="text-soia-green">Produk:</strong><ul className="mt-2 space-y-1">{orderItems.map((item) => <li key={item.productId}>{item.name} × {item.quantity}</li>)}</ul></div><p><strong className="text-soia-green">Total quantity:</strong> {cart.itemCount}</p><p className="text-2xl font-black text-soia-green">{formatRupiah(cart.totalPrice)}</p></div><label className="mt-5 flex items-start gap-3 rounded-2xl bg-soia-cream/70 p-4 text-sm font-bold"><input className="mt-1 h-5 w-5 accent-soia-green" type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />Saya sudah memeriksa ringkasan pesanan dan memahami ini adalah checkout demo.</label><Button type="button" size="lg" className="mt-4 w-full" isLoading={isSubmitting} disabled={!isValid} onClick={submit}>Buat Pesanan Demo</Button></aside>
+        <aside className="h-fit rounded-[2rem] border border-soia-green/8 bg-[var(--tg-card)] p-5 shadow-card lg:sticky lg:top-24"><div className="grid h-12 w-12 place-items-center rounded-2xl bg-soia-mist"><CartIcon /></div><h2 className="mt-4 text-xl font-black">4. Konfirmasi</h2><div className="mt-4 space-y-3 text-sm font-semibold text-soia-green/70"><p><strong className="text-soia-green">Nama:</strong> {customer.fullName || '-'}</p><p><strong className="text-soia-green">WhatsApp:</strong> {customer.whatsapp || '-'}</p><p><strong className="text-soia-green">Alamat:</strong> {[address.address, address.district, address.city, address.province, address.postalCode].filter(Boolean).join(', ') || '-'}</p><div><strong className="text-soia-green">Produk:</strong><ul className="mt-2 space-y-1">{orderItems.map((item) => <li key={item.productId}>{item.name} × {item.quantity}</li>)}</ul></div><p><strong className="text-soia-green">Total quantity:</strong> {cart.itemCount}</p><p className="text-2xl font-black text-soia-green">{formatRupiah(cart.totalPrice)}</p></div><label className="mt-5 flex items-start gap-3 rounded-2xl bg-soia-cream/70 p-4 text-sm font-bold"><input className="mt-1 h-5 w-5 accent-soia-green" type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />Saya sudah memeriksa ringkasan pesanan dan memahami total akan dihitung ulang oleh server.</label><Button type="button" size="lg" className="mt-4 w-full" isLoading={isSubmitting} disabled={!isValid} onClick={submit}>Buat Pesanan</Button></aside>
       </div>
       {toast ? <div className="toast-in fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[70] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-soia-green/10 bg-white/95 px-4 py-3 text-sm font-bold text-soia-green shadow-card" role="status">{toast}</div> : null}
     </main>
