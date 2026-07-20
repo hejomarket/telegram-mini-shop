@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { products } from '../lib/products';
 import { useCart } from '../lib/cart';
 import { useTelegram } from '../providers/TelegramProvider';
@@ -9,63 +9,79 @@ import { CartDrawer } from './CartDrawer';
 import { ProductCard } from './ProductCard';
 import { TelegramDebugPanel } from './telegram/TelegramDebugPanel';
 import { TelegramProfile } from './telegram/TelegramProfile';
+import { Badge } from './ui/Badge';
+import { Button } from './ui/Button';
+import { EmptyState } from './ui/EmptyState';
+import { CartIcon, LeafIcon, SparkIcon } from './ui/Icons';
 
 export function AppShell() {
   const cart = useCart();
-  const { triggerHaptic } = useTelegram();
+  const { triggerHaptic, user, mode } = useTelegram();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const quantities = useMemo(() => new Map(cart.items.map((item) => [item.productId, item.quantity])), [cart.items]);
+  const greetingName = user?.first_name || 'there';
 
   const openCheckoutModal = useCallback(() => {
     setIsCheckoutModalOpen(true);
+    setIsCartOpen(false);
   }, []);
 
   useTelegramMainButton(cart.itemCount, openCheckoutModal);
 
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
   const handleAddItem = (productId: string) => {
     triggerHaptic();
     cart.addItem(productId);
+    const product = products.find((item) => item.id === productId);
+    setToast(`${product?.name ?? 'Item'} added to cart`);
   };
 
   return (
-    <main className="safe mx-auto min-h-screen w-full max-w-md px-4">
-      <header className="sticky top-0 z-30 -mx-4 bg-soia-cream/90 px-4 py-3 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-soia-green/65">Hi, welcome back</p>
-            <h1 className="text-xl font-black tracking-tight text-soia-green">SOIA Protein Shop</h1>
+    <main className="safe mx-auto min-h-screen w-full max-w-md px-4 sm:max-w-2xl md:max-w-4xl">
+      <header className="sticky top-0 z-30 -mx-4 border-b border-soia-green/5 bg-[var(--tg-bg)]/82 px-4 py-3 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-soia-green text-white shadow-soft"><LeafIcon /></div>
+            <div><p className="text-xs font-bold text-soia-green/56">Hi, {greetingName} 👋</p><h1 className="text-lg font-black tracking-[-0.04em] text-soia-green">SOIA Protein Shop</h1></div>
           </div>
-          <button type="button" onClick={() => setIsCartOpen(true)} className="relative rounded-2xl bg-[var(--tg-button)] p-3 text-[var(--tg-button-text)] shadow-lg shadow-soia-green/20" aria-label="Open cart">
-            <span aria-hidden="true">🛒</span>
-            <span className="absolute -right-2 -top-2 grid min-h-6 min-w-6 place-items-center rounded-full bg-[var(--tg-accent)] px-1 text-xs font-black text-soia-green">{cart.itemCount}</span>
-          </button>
+          <div className="flex items-center gap-2"><Badge tone={mode === 'telegram' ? 'lime' : 'soft'}>{mode === 'telegram' ? 'Telegram' : 'Browser'}</Badge><Button type="button" onClick={() => setIsCartOpen(true)} size="icon" aria-label="Open cart" className="relative"><CartIcon />{cart.itemCount > 0 ? <span className="absolute -right-1.5 -top-1.5 grid min-h-6 min-w-6 place-items-center rounded-full bg-soia-lime px-1 text-[11px] font-black text-soia-forest ring-2 ring-[var(--tg-bg)]">{cart.itemCount}</span> : null}</Button></div>
         </div>
       </header>
 
-      <div className="my-5"><TelegramProfile /></div>
+      <div className="mt-5"><TelegramProfile /></div>
 
-      <section className="my-5 overflow-hidden rounded-[2.2rem] bg-[var(--tg-button)] p-6 text-[var(--tg-button-text)] shadow-xl shadow-soia-green/15">
-        <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-black">3 pilihan rasa</span>
-        <h2 className="mt-5 text-3xl font-black leading-tight">Protein nabati, dibuat lebih menyenangkan.</h2>
-        <p className="mt-3 text-base leading-7 text-white/78">Snack berbahan pangan nyata dengan rasa yang mudah dinikmati setiap hari.</p>
+      <section className="my-5 overflow-hidden rounded-[2.3rem] border border-soia-green/8 bg-soia-green p-6 text-white shadow-card md:p-8">
+        <div className="flex items-start justify-between gap-4"><Badge tone="lime">Healthy protein snacks</Badge><div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/10 text-soia-lime"><SparkIcon /></div></div>
+        <h2 className="mt-6 max-w-xl text-4xl font-black leading-[0.95] tracking-[-0.06em] md:text-5xl">Plant protein, designed for everyday cravings.</h2>
+        <p className="mt-4 max-w-md text-base leading-7 text-white/72">Premium SOIA snacks in Original, Seaweed, and Kecombrang — clean ingredients, balanced crunch, and 18 g protein per pack.</p>
+        <div className="mt-6 grid grid-cols-3 gap-2 text-center text-xs font-bold text-white/72"><div className="rounded-2xl bg-white/10 p-3"><strong className="block text-lg text-white">18 g</strong>Protein</div><div className="rounded-2xl bg-white/10 p-3"><strong className="block text-lg text-white">100 g</strong>Pack</div><div className="rounded-2xl bg-white/10 p-3"><strong className="block text-lg text-white">3</strong>Flavors</div></div>
       </section>
 
-      <section className="grid gap-4 pb-6" aria-labelledby="products-title">
-        <h2 id="products-title" className="sr-only">Products</h2>
-        {products.map((product) => (
-          <ProductCard key={product.id} product={product} onAdd={handleAddItem} />
-        ))}
+      <section className="pb-8" aria-labelledby="products-title">
+        <div className="mb-4 flex items-end justify-between"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-soia-green/45">Shop</p><h2 id="products-title" className="text-2xl font-black tracking-[-0.05em] text-soia-green">Choose your flavor</h2></div><p className="text-sm font-bold text-soia-green/50">{products.length} items</p></div>
+        {products.length === 0 ? <EmptyState icon={<LeafIcon />} title="No products yet" description="Fresh SOIA products will appear here when the catalog is ready." /> : <div className="grid gap-4 md:grid-cols-2">{products.map((product) => <ProductCard key={product.id} product={product} quantity={quantities.get(product.id) ?? 0} onAdd={handleAddItem} />)}</div>}
       </section>
 
       <TelegramDebugPanel />
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onQuantityChange={triggerHaptic} />
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onQuantityChange={() => { triggerHaptic(); setToast('Quantity updated'); }} onCheckout={openCheckoutModal} />
+
+      {toast ? <div className="toast-in fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[70] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-soia-green/10 bg-white/95 px-4 py-3 text-sm font-bold text-soia-green shadow-card backdrop-blur" role="status">{toast}</div> : null}
 
       {isCheckoutModalOpen ? (
-        <div className="fixed inset-0 z-[60] grid place-items-center bg-black/45 px-4" role="dialog" aria-modal="true" aria-labelledby="checkout-title" onClick={() => setIsCheckoutModalOpen(false)}>
-          <section className="w-full max-w-sm rounded-[2rem] bg-[var(--tg-card)] p-6 text-[var(--tg-text)] shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <h2 id="checkout-title" className="text-2xl font-black">Checkout Coming Soon</h2>
-            <p className="mt-3 text-sm leading-6 text-soia-green/70">Checkout will be implemented in Task 4.</p>
-            <button type="button" onClick={() => setIsCheckoutModalOpen(false)} className="mt-5 w-full rounded-2xl bg-[var(--tg-button)] px-5 py-4 text-sm font-black text-[var(--tg-button-text)]">Got it</button>
+        <div className="fade-in fixed inset-0 z-[60] grid place-items-center bg-soia-forest/50 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="checkout-title" onClick={() => setIsCheckoutModalOpen(false)}>
+          <section className="w-full max-w-sm rounded-[2rem] border border-white/60 bg-[var(--tg-card)] p-6 text-[var(--tg-text)] shadow-2xl" onClick={(event) => event.stopPropagation()}>
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-soia-mist text-soia-green"><CartIcon /></div>
+            <h2 id="checkout-title" className="mt-5 text-2xl font-black tracking-[-0.04em]">Checkout coming soon</h2>
+            <p className="mt-3 text-sm leading-6 text-soia-green/64">Checkout will be implemented in Task 4. Your cart is ready when ordering is enabled.</p>
+            <Button type="button" onClick={() => setIsCheckoutModalOpen(false)} className="mt-5 w-full" size="lg">Got it</Button>
           </section>
         </div>
       ) : null}

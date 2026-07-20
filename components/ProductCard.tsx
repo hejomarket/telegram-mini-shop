@@ -1,40 +1,28 @@
 import type { Product } from '../lib/products';
 import { formatRupiah } from '../lib/format';
 import { ProductVisual } from './ProductVisual';
+import { Badge } from './ui/Badge';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
+import { PlusIcon } from './ui/Icons';
 
-type ProductCardProps = {
-  key?: string;
-  product: Product;
-  onAdd: (productId: string) => void;
-};
+type ProductCardProps = { product: Product; quantity: number; onAdd: (productId: string) => void; };
 
-export function ProductCard({ product, onAdd }: ProductCardProps) {
+export function ProductCard({ product, quantity, onAdd }: ProductCardProps) {
   return (
-    <article className="rounded-[2rem] bg-white p-4 shadow-[0_18px_45px_rgba(23,53,41,0.08)] ring-1 ring-soia-green/10">
+    <Card className="group overflow-hidden p-3 transition duration-200 hover:-translate-y-1 hover:shadow-[0_24px_70px_rgba(18,59,42,.14)]">
       <ProductVisual product={product} />
-      <div className="mt-4 flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-xl font-black tracking-tight text-soia-green">{product.name}</h3>
-          <p className="mt-1 text-sm leading-6 text-soia-green/70">{product.description}</p>
+      <div className="p-2 pt-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0"><h3 className="text-xl font-black tracking-[-0.03em] text-soia-green">{product.name}</h3><p className="mt-1 text-sm leading-6 text-soia-green/64">{product.description}</p></div>
+          {quantity > 0 ? <span className="grid h-8 min-w-8 place-items-center rounded-full bg-soia-green px-2 text-xs font-black text-white" aria-label={`${quantity} in cart`}>{quantity}</span> : null}
         </div>
-        <span className="shrink-0 rounded-full bg-soia-cream px-3 py-1 text-xs font-black text-soia-green">{product.badge}</span>
+        <div className="mt-4 flex flex-wrap gap-2"><Badge tone="success">High Protein</Badge><Badge>{product.protein} protein</Badge><Badge>{product.weight}</Badge></div>
+        <div className="mt-5 flex items-center justify-between gap-3">
+          <div><p className="text-[11px] font-bold uppercase tracking-[0.12em] text-soia-green/45">Price</p><p className="text-2xl font-black tracking-[-0.04em] text-soia-green">{formatRupiah(product.price)}</p></div>
+          <Button type="button" onClick={() => onAdd(product.id)} size="lg" aria-label={`Add ${product.name} to cart`}><span className="h-4 w-4"><PlusIcon /></span>Add</Button>
+        </div>
       </div>
-      <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
-        <div className="rounded-2xl bg-soia-cream/70 p-3">
-          <dt className="text-soia-green/60">Weight</dt>
-          <dd className="font-black text-soia-green">{product.weight}</dd>
-        </div>
-        <div className="rounded-2xl bg-soia-cream/70 p-3">
-          <dt className="text-soia-green/60">Protein</dt>
-          <dd className="font-black text-soia-green">{product.protein}</dd>
-        </div>
-      </dl>
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <p className="text-2xl font-black text-soia-green">{formatRupiah(product.price)}</p>
-        <button type="button" onClick={() => onAdd(product.id)} className="rounded-2xl bg-soia-green px-5 py-4 text-sm font-black text-white shadow-lg shadow-soia-green/20" aria-label={`Add ${product.name} to cart`}>
-          Add to Cart
-        </button>
-      </div>
-    </article>
+    </Card>
   );
 }
