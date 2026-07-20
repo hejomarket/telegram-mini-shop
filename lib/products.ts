@@ -1,3 +1,5 @@
+export type ProductStatus = 'active' | 'inactive';
+
 export type Product = {
   id: string;
   name: string;
@@ -5,6 +7,7 @@ export type Product = {
   price: number;
   weight: string;
   protein: string;
+  status: ProductStatus;
   badge: string;
   accent: string;
 };
@@ -17,6 +20,7 @@ export const products: Product[] = [
     price: 25000,
     weight: '100 g',
     protein: '18 g',
+    status: 'active',
     badge: 'Best Seller',
     accent: '#d8ae57',
   },
@@ -27,6 +31,7 @@ export const products: Product[] = [
     price: 28000,
     weight: '100 g',
     protein: '18 g',
+    status: 'active',
     badge: 'Umami',
     accent: '#4e8f6d',
   },
@@ -37,6 +42,7 @@ export const products: Product[] = [
     price: 30000,
     weight: '100 g',
     protein: '18 g',
+    status: 'active',
     badge: 'Signature',
     accent: '#c45f48',
   },
