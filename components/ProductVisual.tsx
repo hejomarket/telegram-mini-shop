@@ -1,22 +1,21 @@
 import type { Product } from '../lib/products';
+import { Badge } from './ui/Badge';
 
 export function ProductVisual({ product }: { product: Product }) {
   const flavor = product.name.replace('SOIA ', '');
 
   return (
-    <div className="relative min-h-44 overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top_left,#fff7df,transparent_42%),linear-gradient(135deg,#f3e7c7,#fffaf0)] p-5">
-      <div className="absolute -right-10 -top-8 h-32 w-32 rounded-full opacity-25" style={{ backgroundColor: product.accent }} />
-      <div className="absolute bottom-5 left-5 h-12 w-12 rounded-full border-[10px] border-soia-green/10" />
-      <div className="absolute bottom-7 right-7 h-6 w-20 rounded-full bg-soia-green/10 blur-sm" />
-      <div className="relative mx-auto flex h-36 w-28 rotate-[-4deg] flex-col items-center justify-between rounded-[1.6rem] border-2 border-soia-green bg-white p-3 text-center shadow-xl">
-        <span className="rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wide text-white" style={{ backgroundColor: product.accent }}>
-          {product.badge}
-        </span>
+    <div className="relative min-h-48 overflow-hidden rounded-[1.7rem] bg-[linear-gradient(145deg,#fffdf8,#eef3e7)] p-5">
+      <div className="absolute -right-8 -top-10 h-36 w-36 rounded-full opacity-25 blur-sm" style={{ backgroundColor: product.accent }} />
+      <div className="absolute left-5 top-5"><Badge tone="lime">{product.badge}</Badge></div>
+      <div className="absolute bottom-5 left-8 h-8 w-28 rounded-full bg-soia-green/12 blur-lg" />
+      <div className="relative mx-auto mt-5 flex h-36 w-28 rotate-[-3deg] flex-col items-center justify-between rounded-[1.5rem] border border-soia-green/15 bg-white/95 p-3 text-center shadow-soft">
+        <span className="h-2 w-12 rounded-full" style={{ backgroundColor: product.accent }} />
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-soia-leaf">SOIA</p>
-          <strong className="mt-1 block text-lg leading-5 text-soia-green">{flavor}</strong>
+          <p className="text-[10px] font-black uppercase tracking-[0.32em] text-soia-leaf">SOIA</p>
+          <strong className="mt-1 block text-xl leading-5 tracking-tight text-soia-green">{flavor}</strong>
         </div>
-        <span className="rounded-full bg-soia-cream px-3 py-1 text-[10px] font-bold text-soia-green">{product.protein} protein</span>
+        <span className="rounded-full bg-soia-mist px-3 py-1 text-[10px] font-black text-soia-green">{product.protein}</span>
       </div>
     </div>
   );
