@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { products } from '../lib/products';
 import { useCart } from '../lib/cart';
 import { useTelegram } from '../providers/TelegramProvider';
@@ -15,21 +16,21 @@ import { EmptyState } from './ui/EmptyState';
 import { CartIcon, LeafIcon, SparkIcon } from './ui/Icons';
 
 export function AppShell() {
+  const router = useRouter();
   const cart = useCart();
   const { triggerHaptic, user, mode } = useTelegram();
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const quantities = useMemo(() => new Map(cart.items.map((item) => [item.productId, item.quantity])), [cart.items]);
   const greetingName = user?.first_name || 'there';
 
-  const openCheckoutModal = useCallback(() => {
-    setIsCheckoutModalOpen(true);
+  const openCheckout = useCallback(() => {
     setIsCartOpen(false);
-  }, []);
+    router.push('/checkout');
+  }, [router]);
 
-  useTelegramMainButton(cart.itemCount, openCheckoutModal);
+  useTelegramMainButton(cart.itemCount, openCheckout);
 
   useEffect(() => {
     if (!toast) return;
@@ -71,20 +72,9 @@ export function AppShell() {
       </section>
 
       <TelegramDebugPanel />
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onQuantityChange={() => { triggerHaptic(); setToast('Quantity updated'); }} onCheckout={openCheckoutModal} />
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onQuantityChange={() => { triggerHaptic(); setToast('Quantity updated'); }} onCheckout={openCheckout} />
 
       {toast ? <div className="toast-in fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[70] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-soia-green/10 bg-white/95 px-4 py-3 text-sm font-bold text-soia-green shadow-card backdrop-blur" role="status">{toast}</div> : null}
-
-      {isCheckoutModalOpen ? (
-        <div className="fade-in fixed inset-0 z-[60] grid place-items-center bg-soia-forest/50 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="checkout-title" onClick={() => setIsCheckoutModalOpen(false)}>
-          <section className="w-full max-w-sm rounded-[2rem] border border-white/60 bg-[var(--tg-card)] p-6 text-[var(--tg-text)] shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-soia-mist text-soia-green"><CartIcon /></div>
-            <h2 id="checkout-title" className="mt-5 text-2xl font-black tracking-[-0.04em]">Checkout coming soon</h2>
-            <p className="mt-3 text-sm leading-6 text-soia-green/64">Checkout will be implemented in Task 4. Your cart is ready when ordering is enabled.</p>
-            <Button type="button" onClick={() => setIsCheckoutModalOpen(false)} className="mt-5 w-full" size="lg">Got it</Button>
-          </section>
-        </div>
-      ) : null}
     </main>
   );
 }

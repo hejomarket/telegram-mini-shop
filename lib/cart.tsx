@@ -15,6 +15,7 @@ type CartContextValue = {
   increaseItem: (productId: string) => void;
   decreaseItem: (productId: string) => void;
   removeItem: (productId: string) => void;
+  setItemQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   itemCount: number;
   totalPrice: number;
@@ -87,6 +88,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       increaseItem: (productId) => updateQuantity(productId, 1),
       decreaseItem: (productId) => updateQuantity(productId, -1),
       removeItem: (productId) => setItems((current) => current.filter((item) => item.productId !== productId)),
+      setItemQuantity: (productId, quantity) => setItems((current) => {
+        const normalizedQuantity = Math.max(0, Math.min(99, Math.floor(Number.isFinite(quantity) ? quantity : 0)));
+        if (normalizedQuantity <= 0) return current.filter((item) => item.productId !== productId);
+        if (!productById.has(productId)) return current;
+        const exists = current.some((item) => item.productId === productId);
+        return exists
+          ? current.map((item) => (item.productId === productId ? { ...item, quantity: normalizedQuantity } : item))
+          : [...current, { productId, quantity: normalizedQuantity }];
+      }),
       clearCart: () => setItems([]),
       itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
       totalPrice: items.reduce((sum, item) => sum + (productById.get(item.productId)?.price ?? 0) * item.quantity, 0),
