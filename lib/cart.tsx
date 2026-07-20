@@ -1,7 +1,102 @@
 'use client';
-import type React from 'react';import {createContext,useContext,useEffect,useMemo,useState} from 'react';import {productById} from './products';
-export type CartItem={productId:string;quantity:number};
-type CartContextValue={items:CartItem[];add:(id:string,qty?:number)=>void;dec:(id:string)=>void;remove:(id:string)=>void;clear:()=>void;count:number;total:number};
-const CartContext=createContext<CartContextValue|null>(null);const KEY='soia-cart-v1';
-export function CartProvider({children}:{children:React.ReactNode}){const [items,setItems]=useState<CartItem[]>([]);const [ready,setReady]=useState(false);useEffect(()=>{try{const raw=localStorage.getItem(KEY);if(raw)setItems(JSON.parse(raw) as CartItem[])}catch{}setReady(true)},[]);useEffect(()=>{if(ready)localStorage.setItem(KEY,JSON.stringify(items))},[items,ready]);const value=useMemo<CartContextValue>(()=>({items,add:(id,qty=1)=>setItems((old)=>{const cur=old.find(i=>i.productId===id);if(cur)return old.map(i=>i.productId===id?{...i,quantity:Math.min(99,i.quantity+qty)}:i);return [...old,{productId:id,quantity:Math.min(99,qty)}]}),dec:(id)=>setItems(old=>old.flatMap(i=>i.productId===id?(i.quantity>1?[{...i,quantity:i.quantity-1}]:[]):[i])),remove:(id)=>setItems(old=>old.filter(i=>i.productId!==id)),clear:()=>setItems([]),count:items.reduce((s,i)=>s+i.quantity,0),total:items.reduce((s,i)=>s+(productById.get(i.productId)?.price??0)*i.quantity,0)}),[items]);return <CartContext.Provider value={value}>{children}</CartContext.Provider>}
-export function useCart(){const ctx=useContext(CartContext);if(!ctx)throw new Error('useCart must be used within CartProvider');return ctx}
+
+import type React from 'react';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { productById } from './products';
+
+export type CartItem = {
+  productId: string;
+  quantity: number;
+};
+
+type CartContextValue = {
+  items: CartItem[];
+  addItem: (productId: string) => void;
+  increaseItem: (productId: string) => void;
+  decreaseItem: (productId: string) => void;
+  removeItem: (productId: string) => void;
+  clearCart: () => void;
+  itemCount: number;
+  totalPrice: number;
+};
+
+const CartContext = createContext<CartContextValue | null>(null);
+const STORAGE_KEY = 'soia-cart-v1';
+
+function isValidCartItem(item: unknown): item is CartItem {
+  if (!item || typeof item !== 'object') return false;
+  const candidate = item as Partial<CartItem>;
+  return (
+    typeof candidate.productId === 'string' &&
+    productById.has(candidate.productId) &&
+    Number.isInteger(candidate.quantity) &&
+    candidate.quantity > 0 &&
+    candidate.quantity <= 99
+  );
+}
+
+function readStoredCart() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(isValidCartItem) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  useEffect(() => {
+    setItems(readStoredCart());
+    setHasHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // Ignore storage write failures, for example private browsing limits.
+    }
+  }, [hasHydrated, items]);
+
+  const value = useMemo<CartContextValue>(() => {
+    const updateQuantity = (productId: string, change: number) => {
+      setItems((current) => {
+        const existing = current.find((item) => item.productId === productId);
+        if (!existing && change > 0) {
+          return [...current, { productId, quantity: Math.min(change, 99) }];
+        }
+
+        return current.flatMap((item) => {
+          if (item.productId !== productId) return [item];
+          const nextQuantity = item.quantity + change;
+          return nextQuantity > 0 ? [{ ...item, quantity: Math.min(nextQuantity, 99) }] : [];
+        });
+      });
+    };
+
+    return {
+      items,
+      addItem: (productId) => updateQuantity(productId, 1),
+      increaseItem: (productId) => updateQuantity(productId, 1),
+      decreaseItem: (productId) => updateQuantity(productId, -1),
+      removeItem: (productId) => setItems((current) => current.filter((item) => item.productId !== productId)),
+      clearCart: () => setItems([]),
+      itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+      totalPrice: items.reduce((sum, item) => sum + (productById.get(item.productId)?.price ?? 0) * item.quantity, 0),
+    };
+  }, [items]);
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+}
+
+export function useCart() {
+  const context = useContext(CartContext);
+  if (!context) throw new Error('useCart must be used within CartProvider');
+  return context;
+}
