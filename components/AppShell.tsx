@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { products } from '../lib/products';
+import type { Product } from '../lib/products';
 import { useCart } from '../lib/cart';
 import { useTelegram } from '../providers/TelegramProvider';
 import { useTelegramMainButton } from '../hooks/useTelegramMainButton';
@@ -15,7 +15,7 @@ import { Button } from './ui/Button';
 import { EmptyState } from './ui/EmptyState';
 import { CartIcon, LeafIcon, SparkIcon } from './ui/Icons';
 
-export function AppShell() {
+export function AppShell({ products }: { products: Product[] }) {
   const router = useRouter();
   const cart = useCart();
   const { triggerHaptic, user, mode } = useTelegram();
@@ -68,7 +68,7 @@ export function AppShell() {
 
       <section className="pb-8" aria-labelledby="products-title">
         <div className="mb-4 flex items-end justify-between"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-soia-green/45">Shop</p><h2 id="products-title" className="text-2xl font-black tracking-[-0.05em] text-soia-green">Choose your flavor</h2></div><p className="text-sm font-bold text-soia-green/50">{products.length} items</p></div>
-        {products.length === 0 ? <EmptyState icon={<LeafIcon />} title="No products yet" description="Fresh SOIA products will appear here when the catalog is ready." /> : <div className="grid gap-4 md:grid-cols-2">{products.map((product) => <ProductCard key={product.id} product={product} quantity={quantities.get(product.id) ?? 0} onAdd={handleAddItem} />)}</div>}
+        {products.length === 0 ? <EmptyState icon={<LeafIcon />} title="Produk sedang belum tersedia." description="Katalog SOIA akan tampil kembali setelah produk aktif tersedia." /> : <div className="grid gap-4 md:grid-cols-2">{products.map((product) => <ProductCard key={product.id} product={product} quantity={quantities.get(product.id) ?? 0} onAdd={handleAddItem} />)}</div>}
       </section>
 
       <TelegramDebugPanel />

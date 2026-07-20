@@ -1,51 +1,12 @@
 export type ProductStatus = 'active' | 'inactive';
 
 export type Product = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  weight: string;
-  protein: string;
-  status: ProductStatus;
-  badge: string;
-  accent: string;
+  id: string; slug: string; sku: string; name: string; description: string; shortDescription: string; price: number; compareAtPrice: number | null; currency: 'IDR'; weight: string; weightGrams: number; protein: string; proteinGrams: number | null; servingSizeGrams: number | null; ingredients: string | null; allergenInformation: string | null; category: string | null; imageUrl: string | null; imageAlt: string; additionalImages: string[]; status: ProductStatus; isActive: boolean; isAvailable: boolean; isFeatured: boolean; displayOrder: number; badge: string; accent: string; createdAt?: string; updatedAt?: string;
 };
 
 export const products: Product[] = [
-  {
-    id: 'soia-original',
-    name: 'SOIA Original',
-    description: 'Light and savory plant-based protein snack for everyday snacking.',
-    price: 25000,
-    weight: '100 g',
-    protein: '18 g',
-    status: 'active',
-    badge: 'Best Seller',
-    accent: '#d8ae57',
-  },
-  {
-    id: 'soia-seaweed',
-    name: 'SOIA Seaweed',
-    description: 'Balanced seaweed flavor with a savory umami profile.',
-    price: 28000,
-    weight: '100 g',
-    protein: '18 g',
-    status: 'active',
-    badge: 'Umami',
-    accent: '#4e8f6d',
-  },
-  {
-    id: 'soia-kecombrang',
-    name: 'SOIA Kecombrang',
-    description: 'A bold and aromatic Indonesian kecombrang flavor.',
-    price: 30000,
-    weight: '100 g',
-    protein: '18 g',
-    status: 'active',
-    badge: 'Signature',
-    accent: '#c45f48',
-  },
+  { id: 'soia-original', slug: 'soia-original', sku: 'SOIA-ORI-100', name: 'SOIA Original', description: 'Light and savory plant-based protein snack for everyday snacking.', shortDescription: 'Light and savory plant-based protein snack.', price: 25000, compareAtPrice: null, currency: 'IDR', weight: '100 g', weightGrams: 100, protein: '18 g', proteinGrams: 18, servingSizeGrams: 100, ingredients: null, allergenInformation: null, category: 'Snack Protein', imageUrl: null, imageAlt: 'SOIA Original', additionalImages: [], status: 'active', isActive: true, isAvailable: true, isFeatured: true, displayOrder: 10, badge: 'Best Seller', accent: '#d8ae57' },
+  { id: 'soia-seaweed', slug: 'soia-seaweed', sku: 'SOIA-SEA-100', name: 'SOIA Seaweed', description: 'Balanced seaweed flavor with a savory umami profile.', shortDescription: 'Balanced seaweed flavor with savory umami.', price: 28000, compareAtPrice: null, currency: 'IDR', weight: '100 g', weightGrams: 100, protein: '18 g', proteinGrams: 18, servingSizeGrams: 100, ingredients: null, allergenInformation: null, category: 'Snack Protein', imageUrl: null, imageAlt: 'SOIA Seaweed', additionalImages: [], status: 'active', isActive: true, isAvailable: true, isFeatured: false, displayOrder: 20, badge: 'Umami', accent: '#4e8f6d' },
+  { id: 'soia-kecombrang', slug: 'soia-kecombrang', sku: 'SOIA-KEC-100', name: 'SOIA Kecombrang', description: 'A bold and aromatic Indonesian kecombrang flavor.', shortDescription: 'Bold aromatic Indonesian kecombrang flavor.', price: 30000, compareAtPrice: null, currency: 'IDR', weight: '100 g', weightGrams: 100, protein: '18 g', proteinGrams: 18, servingSizeGrams: 100, ingredients: null, allergenInformation: null, category: 'Snack Protein', imageUrl: null, imageAlt: 'SOIA Kecombrang', additionalImages: [], status: 'active', isActive: true, isAvailable: true, isFeatured: false, displayOrder: 30, badge: 'Signature', accent: '#c45f48' },
 ];
-
 export const productById = new Map(products.map((product) => [product.id, product]));

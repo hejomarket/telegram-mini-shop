@@ -12,7 +12,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin" className="font-black focus:outline-none focus:ring-2 focus:ring-white">SOIA Admin</Link>
           <nav className="flex items-center gap-2" aria-label="Navigasi admin">
             <Link className="min-h-11 rounded-full px-4 py-3 text-sm font-bold hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white" href="/admin">Dashboard</Link>
-            <Link className="min-h-11 rounded-full px-4 py-3 text-sm font-bold hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white" href="/admin/orders">Pesanan</Link>
+            <Link className="min-h-11 rounded-full px-4 py-3 text-sm font-bold hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white" href="/admin/orders">Pesanan</Link><Link className="min-h-11 rounded-full px-4 py-3 text-sm font-bold hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white" href="/admin/products">Produk</Link>
             <LogoutButton />
           </nav>
         </div>

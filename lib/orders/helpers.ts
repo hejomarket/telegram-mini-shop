@@ -1,4 +1,4 @@
-import { productById } from '../products';
+import { getTrustedProductsByIds, isProductPurchasable } from '../products/repository';
 import type { CreateOrderPayload } from './validation';
 import type { OrderItemSnapshot, PersistedOrder } from './types';
 
@@ -13,16 +13,21 @@ export function generateOrderNumber(date = new Date()) {
   return `SOIA-${stamp}-${suffix}`;
 }
 
-export function calculateOrderItems(items: CreateOrderPayload['items']): OrderItemSnapshot[] {
+export async function calculateOrderItems(items: CreateOrderPayload['items']): Promise<OrderItemSnapshot[]> {
+  const trustedProducts = await getTrustedProductsByIds(items.map((item) => item.productId));
   return items.map((item) => {
-    const product = productById.get(item.productId);
-    if (!product || product.status !== 'active') throw new OrderError(422, `Unknown product: ${item.productId}`);
+    const product = trustedProducts.get(item.productId);
+    if (!product) throw new OrderError(422, `Produk tidak ditemukan: ${item.productId}`);
+    if (!isProductPurchasable(product)) {
+      console.warn('checkout.product.rejected', { productId: item.productId, sku: product.sku });
+      throw new OrderError(422, 'Produk ini sedang tidak tersedia dan perlu dihapus sebelum melanjutkan pembayaran.');
+    }
     return { productId: product.id, productName: product.name, unitPrice: product.price, quantity: item.quantity, subtotal: product.price * item.quantity };
   });
 }
 
-export function buildOrder(payload: CreateOrderPayload): PersistedOrder {
-  const items = calculateOrderItems(payload.items);
+export async function buildOrder(payload: CreateOrderPayload): Promise<PersistedOrder> {
+  const items = await calculateOrderItems(payload.items);
   const subtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
   const now = new Date().toISOString();
   return {
