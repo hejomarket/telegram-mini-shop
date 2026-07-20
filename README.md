@@ -33,7 +33,6 @@ Buka `http://localhost:3000`. Aplikasi tetap berjalan walau Supabase belum diisi
 Di Vercel buka **Project Settings > Environment Variables**, lalu isi jika sudah memakai Supabase:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 `SUPABASE_SERVICE_ROLE_KEY` hanya dipakai di server API. Jangan pernah menaruh nilainya di kode client.
@@ -222,3 +221,59 @@ Never expose the Midtrans Server Key, Supabase service role key, admin password 
 ## Payment Testing
 
 Use Midtrans Sandbox tools to test pending, settlement, deny, cancel, expire, repeated webhook delivery, invalid signature handling, payment retry, and out-of-order notifications. Automated tests should mock Midtrans and never call Production APIs.
+
+## Architecture Review
+
+Task 7.5 keeps one canonical flow for production orders and payments. Checkout clients submit customer/address details plus product IDs and quantities only; `app/api/orders/route.ts` validates the payload, `lib/orders/helpers.ts` recalculates prices from `lib/products.ts`, and `lib/orders/repository.ts` stores the order with a server-generated order number and access token. Public order reads remain backward compatible with older records, but records that have an `order_access_token_hash` require the matching access token before returning customer order details.
+
+Payments are initiated only through `app/api/payments/midtrans/create/route.ts`. The server checks order ownership, payment eligibility, server-calculated totals, Midtrans configuration, and then creates a Midtrans Snap transaction. Browser Snap callbacks are UX-only; final payment state is controlled by `app/api/webhooks/midtrans/route.ts`, signature verification, amount matching, and server-side status verification helpers in `lib/midtrans`.
+
+Server/client boundaries are intentional: Supabase service-role access, admin session signing, Midtrans Server Key usage, webhook verification, and payment attempt writes stay in server-only modules. Client components may use only public configuration such as the Midtrans Client Key and Snap.js URL. Telegram integration is browser-guarded and Browser Mode remains supported when `window.Telegram` is absent.
+
+Environment variables are grouped as follows:
+
+- Core storefront: no secrets required for build or local Browser Mode.
+- Database mode: `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
+- Admin login: `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH`, `ADMIN_SESSION_SECRET`.
+- Midtrans payments: `MIDTRANS_IS_PRODUCTION=false`, `MIDTRANS_SERVER_KEY`, `NEXT_PUBLIC_MIDTRANS_CLIENT_KEY`, `MIDTRANS_MERCHANT_ID`, `NEXT_PUBLIC_APP_URL`.
+- Optional local development: leave admin, Supabase, or Midtrans values blank to use safe unavailable/demo behavior.
+
+When Midtrans is unconfigured, payment creation returns a safe unavailable response and the application still builds. When admin authentication is unconfigured, the public storefront remains available and admin login reports incomplete configuration instead of crashing.
+
+Key validation commands:
+
+```bash
+npm install
+npm run build
+npm run lint
+npm run typecheck
+npm test
+```
+
+Local development startup remains:
+
+```bash
+npm install
+npm run dev
+```
+
+Vercel deployment should configure only real server secrets in Vercel environment variables. Never expose `SUPABASE_SERVICE_ROLE_KEY`, `MIDTRANS_SERVER_KEY`, `ADMIN_PASSWORD_HASH`, or `ADMIN_SESSION_SECRET` through `NEXT_PUBLIC_` variables.
+
+## Migration Order
+
+Run migrations in this exact order for a migration-based setup:
+
+1. `supabase/migrations/001_initial_orders_schema.sql`
+2. `supabase/migrations/002_admin_dashboard.sql`
+3. `supabase/migrations/003_midtrans_payments.sql`
+
+For a new manual Supabase SQL Editor setup, `supabase/schema.sql` reflects the full current schema and the migrations document the additive history.
+
+## Known External Setup Still Required
+
+- A Midtrans account is not required for build completion.
+- Midtrans credentials can be added later.
+- Payment remains disabled until Midtrans credentials are configured.
+- Supabase credentials are required for persistent database mode; otherwise local/demo mode uses process memory.
+- Admin credentials are required for admin login.
+- This repository review does not prove live Supabase or Midtrans Sandbox behavior unless valid external credentials are supplied separately.

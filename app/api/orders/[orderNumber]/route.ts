@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { findOrder } from '../../../../lib/orders/repository';
+import { findOrder, getOrderAccessTokenHash } from '../../../../lib/orders/repository';
+import { verifyOrderAccessToken } from '../../../../lib/orders/access';
 import { serverLog } from '../../../../lib/orders/logger';
 
 type Params = { params: Promise<{ orderNumber: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   try {
     const { orderNumber } = await params;
     if (!/^SOIA-\d{8}-[A-Z0-9]{6}$/.test(orderNumber)) {
@@ -12,6 +13,11 @@ export async function GET(_request: Request, { params }: Params) {
     }
     const { order, mode } = await findOrder(orderNumber);
     if (!order) return NextResponse.json({ success: false, message: 'Order not found', mode }, { status: 404 });
+    const tokenHash = await getOrderAccessTokenHash(orderNumber);
+    const token = new URL(request.url).searchParams.get('accessToken') ?? '';
+    if (tokenHash && !verifyOrderAccessToken(token, tokenHash)) {
+      return NextResponse.json({ success: false, message: 'Order access denied' }, { status: 403 });
+    }
     const { adminNotes: _adminNotes, id: _id, telegramUserId: _telegramUserId, telegramUsername: _telegramUsername, telegramFirstName: _telegramFirstName, telegramLastName: _telegramLastName, telegramLanguage: _telegramLanguage, ...safeOrder } = order;
     return NextResponse.json({ success: true, order: safeOrder, mode });
   } catch (error) {

@@ -35,6 +35,7 @@ export type TelegramMainButton = {
 
 export type TelegramHapticFeedback = {
   impactOccurred: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft') => void;
+  notificationOccurred?: (type: string) => void;
 };
 
 export type TelegramWebApp = {
@@ -52,6 +53,7 @@ export type TelegramWebApp = {
   isFullscreen?: boolean;
   MainButton: TelegramMainButton;
   HapticFeedback?: TelegramHapticFeedback;
+  openLink?: (url: string) => void;
   ready: () => void;
   expand: () => void;
   requestFullscreen?: () => void;
@@ -63,9 +65,3 @@ export type TelegramWebApp = {
 export type TelegramEnvironment = {
   WebApp?: TelegramWebApp;
 };
-
-declare global {
-  interface Window {
-    Telegram?: TelegramEnvironment;
-  }
-}
