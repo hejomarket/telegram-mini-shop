@@ -1,6 +1,6 @@
 export type RuntimeMode = 'supabase' | 'demo';
 
-export type OrderStatus = 'pending' | 'confirmed' | 'cancelled' | 'fulfilled';
+export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'completed' | 'cancelled';
 
 export type OrderItemInput = {
   productId: string;
@@ -37,5 +37,6 @@ export type PersistedOrder = {
   status: OrderStatus;
   createdAt: string;
   updatedAt: string;
+  adminNotes?: string | null;
   items: OrderItemSnapshot[];
 };

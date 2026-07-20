@@ -12,7 +12,8 @@ export async function GET(_request: Request, { params }: Params) {
     }
     const { order, mode } = await findOrder(orderNumber);
     if (!order) return NextResponse.json({ success: false, message: 'Order not found', mode }, { status: 404 });
-    return NextResponse.json({ success: true, order, mode });
+    const { adminNotes: _adminNotes, id: _id, telegramUserId: _telegramUserId, telegramUsername: _telegramUsername, telegramFirstName: _telegramFirstName, telegramLastName: _telegramLastName, telegramLanguage: _telegramLanguage, ...safeOrder } = order;
+    return NextResponse.json({ success: true, order: safeOrder, mode });
   } catch (error) {
     serverLog('error', 'order.read.failed', { message: error instanceof Error ? error.message : 'Unknown error' });
     return NextResponse.json({ success: false, message: 'Unable to read order' }, { status: 500 });
