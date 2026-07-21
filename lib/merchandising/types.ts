@@ -62,4 +62,8 @@ export type AdminBannerInput = {
   backgroundColor?: string | null;
   startsAt?: string | null;
   endsAt?: string | null;
+  updatedAt?: string;
 };
+
+export type AdminBannerMutationInput = AdminBannerInput;
+export type AdminBannerPatchInput = Partial<AdminBannerInput> & { updatedAt?: string };

@@ -335,3 +335,18 @@ Canonical banner types, validation, destination safety rules, schedule helpers, 
 Run migrations in numeric order. Task 9.5A adds:
 
 7. `supabase/migrations/007_storefront_banners.sql`
+
+## Admin Banner Management
+
+Task 9.5B adds secure admin-only storefront banner management without rendering banners on the public homepage. The public carousel remains pending for Task 9.5C.
+
+- Admin routes: `/admin/storefront`, `/admin/storefront/banners`, `/admin/storefront/banners/new`, and `/admin/storefront/banners/[bannerId]`.
+- Create and edit workflow: admins configure content, images, CTA destination, display settings, status, order, and schedule in one reusable form with a local non-public preview.
+- Destination types: no destination, active product, active-product-derived category, featured products, all products, or a safe internal path. External URLs are not accepted.
+- Activation and schedule: banners use separate publishing status and schedule state; activation requires valid desktop image, alt text, schedule, and destination.
+- Images: desktop image is required and mobile image is optional. Recommended sizes are 1600 × 640 px for desktop and 1080 × 1200 px for mobile.
+- Upload rules: JPEG, PNG, and WebP files are accepted up to 5 MB per image.
+- Storage strategy: banner uploads use the existing Supabase Storage upload pattern with application-managed paths under `banners/{temporary-or-banner-id}/...` in the configured storage bucket.
+- Replacement safety: new images are uploaded and the database row is updated before old managed banner images are cleaned up.
+- Deletion behavior: deleting a banner permanently removes the database row and only attempts cleanup for recognized managed banner image paths; arbitrary URLs, product images, and unrelated storage paths are not deleted.
+- Demo Mode: banner writes and uploads require Supabase database and storage configuration and do not fake successful persistence when configuration is missing.
