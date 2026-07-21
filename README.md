@@ -323,3 +323,15 @@ When Supabase URL or service-role configuration is missing, the public storefron
 ### Product Migration and Seed
 
 Apply migrations in numeric order. Task 9 adds `supabase/migrations/006_product_cms.sql` after Task 8. The migration creates `public.products` additively with unique slug and SKU indexes, active/availability/display-order indexes, updated-at trigger support, safe constraints, and idempotent inserts that preserve existing public product IDs. `supabase/seed/products.sql` mirrors the safe seed strategy for local setup and uses conflict handling so production edits are not overwritten by repeated deployments.
+
+### Storefront Banner Foundation
+
+Task 9.5A adds `supabase/migrations/007_storefront_banners.sql` after the Product CMS migration. The migration creates `public.storefront_banners` as the database foundation for future storefront merchandising banners, including banner copy, managed image URL/path fields, CTA destination metadata, active status, display order, visual theme settings, schedule timestamps, and audit timestamps.
+
+Schedule visibility is centralized in server-side domain logic: a banner is visible only when it is active, `starts_at` is empty or the server time is on/after it, and `ends_at` is empty or the server time is on/before it. Allowed destination types are `none`, `product`, `category`, `featured`, `all_products`, and `internal_path`; arbitrary external URLs are intentionally unsupported. Text themes are limited to `light` and `dark`.
+
+Canonical banner types, validation, destination safety rules, schedule helpers, public serialization, and repository functions live under `lib/merchandising/`. In Demo Mode, where Supabase server configuration is missing, public banner listing safely returns an empty result rather than fake persistent banner data. The admin banner UI and public carousel are not implemented in this foundation task.
+
+Run migrations in numeric order. Task 9.5A adds:
+
+7. `supabase/migrations/007_storefront_banners.sql`
