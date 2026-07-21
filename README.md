@@ -335,6 +335,7 @@ Canonical banner types, validation, destination safety rules, schedule helpers, 
 Run migrations in numeric order. Task 9.5A adds:
 
 7. `supabase/migrations/007_storefront_banners.sql`
+8. `supabase/migrations/008_product_best_seller.sql`
 
 ## Admin Banner Management
 
@@ -359,6 +360,14 @@ When no public banner is eligible, the homepage renders no banner space and proc
 
 Autoplay pauses while the page is hidden, the carousel is hovered, focus is inside the carousel, the user is interacting, or `prefers-reduced-motion: reduce` is active. Reduced-motion users keep manual controls and swipe without decorative smooth movement.
 
-CTA destinations are resolved publicly as follows: `none` renders no link, `internal_path` uses the already validated safe internal path, `all_products` goes to `/#products`, `category` goes to `/?category=<normalized-value>#products`, `featured` falls back to `/#products`, and `product` is suppressed until a public product-detail route exists. External, admin, API, protocol-relative, JavaScript, data, and malformed paths are not rendered.
+CTA destinations are resolved publicly as follows: `none` renders no link, `internal_path` uses the already validated safe internal path, `all_products` goes to `/#products`, `category` goes to `/?category=<normalized-value>#products`, `featured` goes to `/#featured`, and `product` is suppressed until a public product-detail route exists. External, admin, API, protocol-relative, JavaScript, data, and malformed paths are not rendered.
 
 Desktop and optional mobile images are served with native responsive `<picture>` markup; the mobile image is used on narrow screens when present and the desktop image is the fallback. If an image fails to load, the slide hides the broken image, keeps text and CTA content, and uses the validated fallback background color or brand surface. In Demo Mode or without Supabase configuration, no fake banner is shown. No product, cart, checkout, order, Midtrans, or payment logic was changed for this carousel.
+
+## Homepage Merchandising
+
+The public homepage merchandising sections derive from the canonical Product CMS catalog only. Categories come from publicly eligible products, empty category values are hidden, duplicate labels are normalized into one URL-safe chip, and category links use `/?category=<normalized-category>#products`; all products use `/#products`. Invalid category queries do not crash the storefront and show a recovery action back to all products.
+
+`Pilihan SOIA` uses the existing `is_featured` flag and renders up to four public products at `/#featured`. `Paling Banyak Dipilih` uses the manually curated `is_best_seller` flag added by `supabase/migrations/008_product_best_seller.sql` and renders up to four public products at `/#best-sellers`; it is not calculated from orders, revenue, carts, or analytics. Empty featured and best-seller sections are hidden, while the all-products section at `/#products` remains visible with safe empty states. Products may overlap between featured, best-seller, and all-products sections.
+
+Banner CTA destinations remain compatible: `category` resolves to `/?category=<normalized-category>#products`, `featured` resolves to `/#featured`, and `all_products` resolves to `/#products` while existing unsafe destination blocking remains in place. Demo Mode derives categories and merchandising from the static fallback catalog, with `is_best_seller` defaulting safely when absent. Product cards, cart behavior, checkout, orders, payments, and Telegram authentication are unchanged.

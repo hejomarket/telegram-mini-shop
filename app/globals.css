@@ -30,3 +30,6 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--tg-accent); out
 .storefront-banner-scroll::-webkit-scrollbar { display: none; }
 .storefront-banner-slide { aspect-ratio: 4 / 5; }
 @media (min-width: 768px) { .storefront-banner-slide { aspect-ratio: 5 / 2; } }
+
+.storefront-chip-scroll { scrollbar-width: none; overscroll-behavior-x: contain; }
+.storefront-chip-scroll::-webkit-scrollbar { display: none; }
