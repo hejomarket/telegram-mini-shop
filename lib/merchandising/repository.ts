@@ -1,57 +1,29 @@
 import 'server-only';
 import { getRuntimeMode, getSupabaseServerClient } from '../supabase/server';
+import { listActiveAdminProductsForDestinations } from '../products/repository';
+import { normalizeBannerDestinationValue } from './destination';
 import { isBannerCurrentlyVisible } from './schedule';
-import type { PublicBanner, StorefrontBannerRow } from './types';
+import { bannerWriteSchema } from './schema';
+import { bannerStorageBucket, isManagedBannerImagePath } from './storage';
+import type { AdminBannerInput, PublicBanner, StorefrontBannerRow } from './types';
 
 const columns = 'id,title,subtitle,eyebrow_text,image_url,mobile_image_url,image_alt,cta_label,destination_type,destination_value,is_active,display_order,text_theme,overlay_strength,background_color,starts_at,ends_at,created_at,updated_at';
+const demoMessage = 'Pengelolaan banner membutuhkan konfigurasi database dan storage Supabase.';
+export class BannerRepositoryError extends Error { constructor(message: string, public status = 400) { super(message); } }
 
-export function serializePublicBanner(row: StorefrontBannerRow): PublicBanner {
-  return {
-    id: row.id,
-    title: row.title,
-    subtitle: row.subtitle,
-    eyebrowText: row.eyebrow_text,
-    imageUrl: row.image_url,
-    mobileImageUrl: row.mobile_image_url,
-    imageAlt: row.image_alt,
-    ctaLabel: row.cta_label,
-    destinationType: row.destination_type,
-    destinationValue: row.destination_value,
-    displayOrder: row.display_order,
-    textTheme: row.text_theme,
-    overlayStrength: Number(row.overlay_strength),
-    backgroundColor: row.background_color,
-  };
-}
+export function serializePublicBanner(row: StorefrontBannerRow): PublicBanner { return { id: row.id, title: row.title, subtitle: row.subtitle, eyebrowText: row.eyebrow_text, imageUrl: row.image_url, mobileImageUrl: row.mobile_image_url, imageAlt: row.image_alt, ctaLabel: row.cta_label, destinationType: row.destination_type, destinationValue: row.destination_value, displayOrder: row.display_order, textTheme: row.text_theme, overlayStrength: Number(row.overlay_strength), backgroundColor: row.background_color }; }
+export function sortBannerRows(rows: StorefrontBannerRow[]): StorefrontBannerRow[] { return [...rows].sort((a, b) => a.display_order - b.display_order || a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)); }
+export async function listAdminBanners(): Promise<{ rows: StorefrontBannerRow[]; mode: 'supabase' | 'demo' }> { if (getRuntimeMode() === 'demo') return { rows: [], mode: 'demo' }; const supabase = getSupabaseServerClient(); if (!supabase) return { rows: [], mode: 'demo' }; const { data, error } = await supabase.from('storefront_banners').select(columns).order('display_order').order('created_at').order('id').limit(100); if (error) throw new Error('Failed to load storefront banners'); return { rows: (data ?? []) as StorefrontBannerRow[], mode: 'supabase' }; }
+export async function getBannerById(id: string): Promise<StorefrontBannerRow | null> { if (getRuntimeMode() === 'demo') return null; const supabase = getSupabaseServerClient(); if (!supabase) return null; const { data, error } = await supabase.from('storefront_banners').select(columns).eq('id', id).maybeSingle(); if (error) throw new Error('Failed to load storefront banner'); return data ? (data as StorefrontBannerRow) : null; }
+export async function listVisiblePublicBanners(now: Date = new Date()): Promise<{ rows: PublicBanner[]; mode: 'supabase' | 'demo' }> { if (getRuntimeMode() === 'demo') return { rows: [], mode: 'demo' }; const supabase = getSupabaseServerClient(); if (!supabase) return { rows: [], mode: 'demo' }; const { data, error } = await supabase.from('storefront_banners').select(columns).eq('is_active', true).order('display_order').order('created_at').order('id'); if (error) throw new Error('Failed to load storefront banners'); const rows = sortBannerRows((data ?? []) as StorefrontBannerRow[]).filter(row => isBannerCurrentlyVisible(row, now)).map(serializePublicBanner); return { rows, mode: 'supabase' }; }
 
-export function sortBannerRows(rows: StorefrontBannerRow[]): StorefrontBannerRow[] {
-  return [...rows].sort((a, b) => a.display_order - b.display_order || a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
-}
-
-export async function listAdminBanners(): Promise<{ rows: StorefrontBannerRow[]; mode: 'supabase' | 'demo' }> {
-  if (getRuntimeMode() === 'demo') return { rows: [], mode: 'demo' };
-  const supabase = getSupabaseServerClient();
-  if (!supabase) return { rows: [], mode: 'demo' };
-  const { data, error } = await supabase.from('storefront_banners').select(columns).order('display_order').order('created_at').order('id');
-  if (error) throw new Error('Failed to load storefront banners');
-  return { rows: (data ?? []) as StorefrontBannerRow[], mode: 'supabase' };
-}
-
-export async function getBannerById(id: string): Promise<StorefrontBannerRow | null> {
-  if (getRuntimeMode() === 'demo') return null;
-  const supabase = getSupabaseServerClient();
-  if (!supabase) return null;
-  const { data, error } = await supabase.from('storefront_banners').select(columns).eq('id', id).maybeSingle();
-  if (error) throw new Error('Failed to load storefront banner');
-  return data ? (data as StorefrontBannerRow) : null;
-}
-
-export async function listVisiblePublicBanners(now: Date = new Date()): Promise<{ rows: PublicBanner[]; mode: 'supabase' | 'demo' }> {
-  if (getRuntimeMode() === 'demo') return { rows: [], mode: 'demo' };
-  const supabase = getSupabaseServerClient();
-  if (!supabase) return { rows: [], mode: 'demo' };
-  const { data, error } = await supabase.from('storefront_banners').select(columns).eq('is_active', true).order('display_order').order('created_at').order('id');
-  if (error) throw new Error('Failed to load storefront banners');
-  const rows = sortBannerRows((data ?? []) as StorefrontBannerRow[]).filter(row => isBannerCurrentlyVisible(row, now)).map(serializePublicBanner);
-  return { rows, mode: 'supabase' };
-}
+function toDb(input: AdminBannerInput) { return { title: input.title ?? null, subtitle: input.subtitle ?? null, eyebrow_text: input.eyebrowText ?? null, image_url: input.imageUrl, mobile_image_url: input.mobileImageUrl ?? null, image_alt: input.imageAlt, cta_label: input.ctaLabel ?? null, destination_type: input.destinationType, destination_value: input.destinationValue ?? null, is_active: input.isActive, display_order: input.displayOrder, text_theme: input.textTheme, overlay_strength: input.overlayStrength, background_color: input.backgroundColor ?? null, starts_at: input.startsAt ?? null, ends_at: input.endsAt ?? null }; }
+async function validateDestinationExists(input: AdminBannerInput) { const value = normalizeBannerDestinationValue(input.destinationType, input.destinationValue); if (input.destinationType === 'product') { const products = await listActiveAdminProductsForDestinations(); if (!value || !products.some(product => product.id === value || product.slug === value)) { console.warn('banner.destination.invalid',{type:'product'}); throw new BannerRepositoryError('Produk tujuan tidak ditemukan atau sedang tidak aktif.'); } } if (input.destinationType === 'category') { const products = await listActiveAdminProductsForDestinations(); if (!value || !products.some(product => product.category?.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'').replace(/-{2,}/g,'-').replace(/^-|-$/g,'') === value)) { console.warn('banner.destination.invalid',{type:'category'}); throw new BannerRepositoryError('Kategori tujuan tidak tersedia.'); } } return { ...input, destinationValue: value }; }
+async function parseAndValidate(raw: unknown) { const parsed = bannerWriteSchema.parse(raw); return validateDestinationExists(parsed); }
+function requireWritable() { if (getRuntimeMode() === 'demo') throw new BannerRepositoryError(demoMessage, 503); const supabase = getSupabaseServerClient(); if (!supabase) throw new BannerRepositoryError(demoMessage, 503); return supabase; }
+export async function createBanner(raw: unknown) { const supabase = requireWritable(); const input = await parseAndValidate(raw); const { data, error } = await supabase.from('storefront_banners').insert(toDb(input)).select(columns).single(); if (error) throw new BannerRepositoryError('Banner belum dapat dibuat.'); console.info('banner.created',{bannerId:data.id}); return data as StorefrontBannerRow; }
+export async function updateBanner(id: string, raw: unknown) { const supabase = requireWritable(); const existing = await getBannerById(id); if (!existing) return null; const input = await parseAndValidate(raw); if (input.updatedAt && existing.updated_at && input.updatedAt !== existing.updated_at) { console.warn('banner.update.conflict',{bannerId:id}); throw new BannerRepositoryError('Banner telah diperbarui dari sesi lain. Muat ulang halaman sebelum menyimpan perubahan.', 409); } const { data, error } = await supabase.from('storefront_banners').update(toDb(input)).eq('id', id).select(columns).single(); if (error) throw new BannerRepositoryError('Banner belum dapat disimpan.'); const cleanupPaths = [existing.image_url !== input.imageUrl ? existing.image_url : null, existing.mobile_image_url && existing.mobile_image_url !== (input.mobileImageUrl ?? null) ? existing.mobile_image_url : null].filter(isManagedBannerImagePath) as string[]; if (cleanupPaths.length) { const cleanup = await supabase.storage.from(bannerStorageBucket).remove(cleanupPaths); if (cleanup.error) console.warn('banner.image.cleanup.failed',{bannerId:id}); } console.info('banner.updated',{bannerId:id}); return data as StorefrontBannerRow; }
+function assertActivatable(row: StorefrontBannerRow) { const parsed = bannerWriteSchema.safeParse({ title: row.title, subtitle: row.subtitle, eyebrowText: row.eyebrow_text, imageUrl: row.image_url, mobileImageUrl: row.mobile_image_url, imageAlt: row.image_alt, ctaLabel: row.cta_label, destinationType: row.destination_type, destinationValue: row.destination_value, isActive: true, displayOrder: row.display_order, textTheme: row.text_theme, overlayStrength: row.overlay_strength, backgroundColor: row.background_color, startsAt: row.starts_at, endsAt: row.ends_at }); if (!parsed.success || !row.image_url || !row.image_alt.trim()) throw new BannerRepositoryError('Banner belum valid untuk diaktifkan. Lengkapi gambar, alt text, jadwal, dan tujuan CTA.'); }
+export async function activateBanner(id: string) { const supabase = requireWritable(); const existing = await getBannerById(id); if (!existing) return null; assertActivatable(existing); await validateDestinationExists({ title: existing.title, subtitle: existing.subtitle, eyebrowText: existing.eyebrow_text, imageUrl: existing.image_url, mobileImageUrl: existing.mobile_image_url, imageAlt: existing.image_alt, ctaLabel: existing.cta_label, destinationType: existing.destination_type, destinationValue: existing.destination_value, isActive: true, displayOrder: existing.display_order, textTheme: existing.text_theme, overlayStrength: existing.overlay_strength, backgroundColor: existing.background_color, startsAt: existing.starts_at, endsAt: existing.ends_at }); const { data, error } = await supabase.from('storefront_banners').update({ is_active: true }).eq('id', id).select(columns).single(); if (error) throw new BannerRepositoryError('Banner belum dapat diaktifkan.'); console.info('banner.activated',{bannerId:id}); return data as StorefrontBannerRow; }
+export async function deactivateBanner(id: string) { const supabase = requireWritable(); const { data, error } = await supabase.from('storefront_banners').update({ is_active: false }).eq('id', id).select(columns).single(); if (error) throw new BannerRepositoryError('Banner belum dapat dinonaktifkan.'); console.info('banner.deactivated',{bannerId:id}); return data as StorefrontBannerRow; }
+export async function deleteBanner(id: string) { const supabase = requireWritable(); const existing = await getBannerById(id); if (!existing) return null; const { error } = await supabase.from('storefront_banners').delete().eq('id', id); if (error) throw new BannerRepositoryError('Banner belum dapat dihapus.'); const paths = [existing.image_url, existing.mobile_image_url].filter(isManagedBannerImagePath) as string[]; if (paths.length) { const cleanup = await supabase.storage.from(bannerStorageBucket).remove(paths); if (cleanup.error) console.warn('banner.image.cleanup.failed',{bannerId:id}); } console.info('banner.deleted',{bannerId:id}); return existing; }

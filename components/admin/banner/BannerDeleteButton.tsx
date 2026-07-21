@@ -1,0 +1,4 @@
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+export function BannerDeleteButton({bannerId}:{bannerId:string}){ const router=useRouter(); const [deleting,setDeleting]=useState(false); return <button type="button" disabled={deleting} onClick={async()=>{ if(!confirm('Hapus banner ini? Tindakan ini tidak dapat dibatalkan.')) return; setDeleting(true); const response=await fetch(`/api/admin/storefront/banners/${bannerId}`,{method:'DELETE'}); setDeleting(false); if(response.ok){ router.push('/admin/storefront/banners'); router.refresh(); return; } alert((await response.json().catch(()=>({message:'Banner belum dapat dihapus.'}))).message); }} className="rounded-full border border-red-200 px-5 py-3 font-bold text-red-700 disabled:opacity-50">{deleting?'Menghapus...':'Hapus Banner'}</button> }
