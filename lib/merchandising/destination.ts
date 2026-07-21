@@ -1,3 +1,4 @@
+import { normalizeCategoryValue } from '../products/categories';
 import { bannerDestinationTypes, type BannerDestinationType } from './types';
 
 const productIdentifierPattern = /^[a-zA-Z0-9][a-zA-Z0-9._-]{1,159}$/;
@@ -13,7 +14,7 @@ export function normalizeBannerDestinationValue(type: BannerDestinationType, val
   const trimmed = typeof value === 'string' ? value.trim() : '';
   if (type === 'none' || type === 'featured' || type === 'all_products') return null;
   if (!trimmed) return null;
-  if (type === 'category') return trimmed.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-{2,}/g, '-').replace(/^-|-$/g, '') || null;
+  if (type === 'category') return normalizeCategoryValue(trimmed);
   return trimmed;
 }
 
