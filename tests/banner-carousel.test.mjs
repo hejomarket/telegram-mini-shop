@@ -19,7 +19,7 @@ const resolveHref = banner => {
   const value = banner.destinationValue?.trim() ?? null;
   if (banner.destinationType === 'none') return null;
   if (banner.destinationType === 'all_products') return '/#products';
-  if (banner.destinationType === 'featured') return '/#products';
+  if (banner.destinationType === 'featured') return '/#featured';
   if (banner.destinationType === 'category') return value && /^[a-z0-9][a-z0-9-]{0,99}$/.test(value) ? `/?category=${encodeURIComponent(value)}#products` : null;
   if (banner.destinationType === 'internal_path') return value && safePath(value) ? value : null;
   return null;
@@ -41,7 +41,7 @@ test('multiple banners enable finite controls, dots, swipe, and autoplay eligibi
 
 test('public CTA resolver maps safe storefront destinations', () => {
   assert.equal(resolveHref({ destinationType: 'all_products', destinationValue: null }), '/#products');
-  assert.equal(resolveHref({ destinationType: 'featured', destinationValue: null }), '/#products');
+  assert.equal(resolveHref({ destinationType: 'featured', destinationValue: null }), '/#featured');
   assert.equal(resolveHref({ destinationType: 'category', destinationValue: 'snack-protein' }), '/?category=snack-protein#products');
   assert.equal(resolveHref({ destinationType: 'internal_path', destinationValue: '/checkout' }), '/checkout');
 });

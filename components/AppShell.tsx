@@ -1,8 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Product } from '../lib/products';
+import type { ProductCategoryNavigationItem } from '../lib/products/categories';
+import { getCategoryHref } from '../lib/products/categories';
 import type { PublicBanner } from '../lib/merchandising/types';
 import { useCart } from '../lib/cart';
 import { useTelegram } from '../providers/TelegramProvider';
@@ -17,7 +20,8 @@ import { Button } from './ui/Button';
 import { EmptyState } from './ui/EmptyState';
 import { CartIcon, LeafIcon } from './ui/Icons';
 
-export function AppShell({ products, banners = [] }: { products: Product[]; banners?: PublicBanner[] }) {
+type AppShellProps = { products: Product[]; allProducts?: Product[]; featuredProducts?: Product[]; bestSellerProducts?: Product[]; categories?: ProductCategoryNavigationItem[]; selectedCategory?: ProductCategoryNavigationItem | null; selectedCategoryValue?: string | null; hasInvalidCategory?: boolean; banners?: PublicBanner[] };
+export function AppShell({ products, allProducts = products, featuredProducts = [], bestSellerProducts = [], categories = [], selectedCategory = null, selectedCategoryValue = null, hasInvalidCategory = false, banners = [] }: AppShellProps) {
   const router = useRouter();
   const cart = useCart();
   const { triggerHaptic, user, mode } = useTelegram();
@@ -43,7 +47,7 @@ export function AppShell({ products, banners = [] }: { products: Product[]; bann
   const handleAddItem = (productId: string) => {
     triggerHaptic();
     cart.addItem(productId);
-    const product = products.find((item) => item.id === productId);
+    const product = allProducts.find((item) => item.id === productId);
     setToast(`${product?.name ?? 'Item'} added to cart`);
   };
 
@@ -63,10 +67,10 @@ export function AppShell({ products, banners = [] }: { products: Product[]; bann
 
       <StorefrontBannerCarousel banners={banners} />
 
-      <section id="products" className="scroll-mt-24 pb-8" aria-labelledby="products-title">
-        <div className="mb-4 flex items-end justify-between"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-soia-green/45">Shop</p><h2 id="products-title" className="text-2xl font-black tracking-[-0.05em] text-soia-green">Choose your flavor</h2></div><p className="text-sm font-bold text-soia-green/50">{products.length} items</p></div>
-        {products.length === 0 ? <EmptyState icon={<LeafIcon />} title="Produk sedang belum tersedia." description="Katalog SOIA akan tampil kembali setelah produk aktif tersedia." /> : <div className="grid gap-4 md:grid-cols-2">{products.map((product) => <ProductCard key={product.id} product={product} quantity={quantities.get(product.id) ?? 0} onAdd={handleAddItem} />)}</div>}
-      </section>
+      <StorefrontCategoryNavigation categories={categories} selectedCategoryValue={selectedCategory?.value ?? selectedCategoryValue} />
+      <ProductSection id="featured" eyebrow="Pilihan SOIA" title="Pilihan SOIA" description="Produk unggulan yang kami pilih untuk kamu." products={featuredProducts} quantities={quantities} onAdd={handleAddItem} hideWhenEmpty />
+      <ProductSection id="best-sellers" eyebrow="Favorit" title="Paling Banyak Dipilih" description="Produk favorit pelanggan SOIA." products={bestSellerProducts} quantities={quantities} onAdd={handleAddItem} hideWhenEmpty />
+      <ProductSection id="products" eyebrow="Shop" title={selectedCategory ? `Produk: ${selectedCategory.label}` : 'Semua Produk'} description={selectedCategory ? 'Menampilkan produk dalam kategori pilihan kamu.' : undefined} products={products} quantities={quantities} onAdd={handleAddItem} emptyTitle={selectedCategoryValue || hasInvalidCategory ? 'Belum ada produk dalam kategori ini.' : 'Produk sedang belum tersedia.'} emptyDescription={selectedCategoryValue || hasInvalidCategory ? 'Coba kategori lain atau kembali lihat semua produk SOIA.' : 'Katalog SOIA akan tampil kembali setelah produk aktif tersedia.'} action={selectedCategoryValue || hasInvalidCategory ? <Link href="/#products" className="inline-flex min-h-11 items-center rounded-full bg-soia-green px-5 font-bold text-white">Lihat Semua Produk</Link> : null} headerAction={selectedCategory ? <Link href="/#products" className="text-sm font-black text-soia-green underline">Lihat Semua</Link> : <p className="text-sm font-bold text-soia-green/50">{products.length} items</p>} />
 
       <TelegramDebugPanel />
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onQuantityChange={() => { triggerHaptic(); setToast('Quantity updated'); }} onCheckout={openCheckout} />
@@ -74,4 +78,15 @@ export function AppShell({ products, banners = [] }: { products: Product[]; bann
       {toast ? <div className="toast-in fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[70] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-2xl border border-soia-green/10 bg-white/95 px-4 py-3 text-sm font-bold text-soia-green shadow-card backdrop-blur" role="status">{toast}</div> : null}
     </main>
   );
+}
+
+function StorefrontCategoryNavigation({ categories, selectedCategoryValue }: { categories: ProductCategoryNavigationItem[]; selectedCategoryValue: string | null | undefined }) {
+  if (categories.length === 0) return null;
+  const items = [{ label: 'Semua', value: null as string | null }, ...categories];
+  return <nav aria-label="Kategori produk" className="mt-6 overflow-x-auto pb-2 storefront-chip-scroll"><div className="flex min-w-0 gap-2">{items.map(item => { const selected = item.value === (selectedCategoryValue ?? null); return <Link key={item.value ?? 'all'} href={getCategoryHref(item.value)} aria-current={selected ? 'page' : undefined} className={`inline-flex min-h-11 shrink-0 items-center rounded-full border px-5 text-sm font-black transition focus:outline-none focus:ring-2 focus:ring-soia-green ${selected ? 'border-soia-green bg-soia-green text-white ring-2 ring-soia-lime/60' : 'border-soia-green/10 bg-white text-soia-green shadow-sm'}`}>{item.label}{selected ? <span className="ml-2 text-xs" aria-hidden="true">✓</span> : null}</Link>; })}</div></nav>;
+}
+
+function ProductSection({ id, eyebrow, title, description, products, quantities, onAdd, hideWhenEmpty, emptyTitle = 'Produk sedang belum tersedia.', emptyDescription = '', action, headerAction }: { id: string; eyebrow: string; title: string; description?: string; products: Product[]; quantities: Map<string, number>; onAdd: (productId: string) => void; hideWhenEmpty?: boolean; emptyTitle?: string; emptyDescription?: string; action?: React.ReactNode; headerAction?: React.ReactNode }) {
+  if (hideWhenEmpty && products.length === 0) return null;
+  return <section id={id} className="scroll-mt-24 py-6" aria-labelledby={`${id}-title`}><div className="mb-4 flex items-end justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-[0.14em] text-soia-green/45">{eyebrow}</p><h2 id={`${id}-title`} className="text-2xl font-black tracking-[-0.05em] text-soia-green">{title}</h2>{description ? <p className="mt-1 text-sm font-semibold text-soia-green/58">{description}</p> : null}</div>{headerAction}</div>{products.length === 0 ? <EmptyState icon={<LeafIcon />} title={emptyTitle} description={emptyDescription} action={action} /> : <div className="grid gap-4 md:grid-cols-2">{products.map((product) => <ProductCard key={product.id} product={product} quantity={quantities.get(product.id) ?? 0} onAdd={onAdd} />)}</div>}</section>;
 }
