@@ -350,3 +350,15 @@ Task 9.5B adds secure admin-only storefront banner management without rendering 
 - Replacement safety: new images are uploaded and the database row is updated before old managed banner images are cleaned up.
 - Deletion behavior: deleting a banner permanently removes the database row and only attempts cleanup for recognized managed banner image paths; arbitrary URLs, product images, and unrelated storage paths are not deleted.
 - Demo Mode: banner writes and uploads require Supabase database and storage configuration and do not fake successful persistence when configuration is missing.
+
+## Public Banner Carousel
+
+The storefront homepage renders the public banner carousel below the sticky storefront header and profile area, then continues into the existing product section. Banner data is loaded on the server through the canonical storefront banner repository, which returns only active banners whose schedule is currently eligible; schedule changes may follow the repository/page cache behavior rather than updating by client polling.
+
+When no public banner is eligible, the homepage renders no banner space and proceeds directly to products. One banner renders as a static responsive hero with CTA support and no arrows, dots, or autoplay. Multiple banners use native horizontal CSS scroll snap for mobile swipe, desktop previous/next controls, dot indicators, and a 6000 ms autoplay interval.
+
+Autoplay pauses while the page is hidden, the carousel is hovered, focus is inside the carousel, the user is interacting, or `prefers-reduced-motion: reduce` is active. Reduced-motion users keep manual controls and swipe without decorative smooth movement.
+
+CTA destinations are resolved publicly as follows: `none` renders no link, `internal_path` uses the already validated safe internal path, `all_products` goes to `/#products`, `category` goes to `/?category=<normalized-value>#products`, `featured` falls back to `/#products`, and `product` is suppressed until a public product-detail route exists. External, admin, API, protocol-relative, JavaScript, data, and malformed paths are not rendered.
+
+Desktop and optional mobile images are served with native responsive `<picture>` markup; the mobile image is used on narrow screens when present and the desktop image is the fallback. If an image fails to load, the slide hides the broken image, keeps text and CTA content, and uses the validated fallback background color or brand surface. In Demo Mode or without Supabase configuration, no fake banner is shown. No product, cart, checkout, order, Midtrans, or payment logic was changed for this carousel.

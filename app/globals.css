@@ -26,3 +26,7 @@ button, input, textarea { font: inherit; }
 button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible { outline: 2px solid var(--tg-accent); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+.storefront-banner-scroll { scrollbar-width: none; overscroll-behavior-x: contain; }
+.storefront-banner-scroll::-webkit-scrollbar { display: none; }
+.storefront-banner-slide { aspect-ratio: 4 / 5; }
+@media (min-width: 768px) { .storefront-banner-slide { aspect-ratio: 5 / 2; } }
